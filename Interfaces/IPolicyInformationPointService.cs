@@ -3,5 +3,5 @@
 namespace oed_authz.Interfaces;
 public interface IPolicyInformationPointService
 {
-    public Task<PipResponse> HandlePipRequest(PipRequest pipRequest, bool filterFormuesfullmakt = false);
+    public Task<PipResponse> HandlePipRequest(PipRequest pipRequest);
 }

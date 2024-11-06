@@ -24,11 +24,11 @@ public class OedRoleRepositoryService : IOedRoleRepositoryService
         _dataSource?.Dispose();
     }
 
-    public async Task<List<RepositoryRoleAssignment>> GetRoleAssignmentsForEstate(string estateSsn, string? filterRecipentSsn = null, string? filterRoleCode = null, bool filterFormuesFullmakt = false)
-        => await Query(estateSsn, filterRecipentSsn, filterRoleCode, filterFormuesFullmakt);
+    public async Task<List<RepositoryRoleAssignment>> GetRoleAssignmentsForEstate(string estateSsn, string? filterRecipentSsn = null, string? filterRoleCode = null)
+        => await Query(estateSsn, filterRecipentSsn, filterRoleCode);
     
-    public async Task<List<RepositoryRoleAssignment>> GetRoleAssignmentsForPerson(string recipientSsn, string? filterEstateSsn = null, string? filterRoleCode = null, bool filterFormuesFullmakt = false)
-        => await Query(filterEstateSsn, recipientSsn, filterRoleCode, filterFormuesFullmakt);
+    public async Task<List<RepositoryRoleAssignment>> GetRoleAssignmentsForPerson(string recipientSsn, string? filterEstateSsn = null, string? filterRoleCode = null)
+        => await Query(filterEstateSsn, recipientSsn, filterRoleCode);
 
     public async Task AddRoleAssignment(RepositoryRoleAssignment roleAssignment)
     {
@@ -83,22 +83,11 @@ public class OedRoleRepositoryService : IOedRoleRepositoryService
         WHERE 1=1
         """;
 
-    private const string BaseSqlWithFormuesfullmaktFiltering = $"""
-        SELECT "id", "estateSsn", "recipientSsn", "roleCode", "heirSsn", "created"
-        FROM oedauthz.roleassignments ra
-        WHERE (ra."roleCode" != '{Constants.FormuesfullmaktRoleCode}'
-        OR NOT EXISTS (
-            SELECT 1 FROM oedauthz.roleassignments ra2
-            WHERE ra2."estateSsn" = ra."estateSsn"
-            AND ra2."roleCode" = '{Constants.ProbateRoleCode}'
-        ))
-        """;
-
-    private async Task<List<RepositoryRoleAssignment>> Query(string? estateSsn, string? recipientSsn, string? roleCode, bool filterFormuesfullmakt = false)
+    private async Task<List<RepositoryRoleAssignment>> Query(string? estateSsn, string? recipientSsn, string? roleCode)
     {
         _dataSource ??= _dataSourceBuilder.Build();
 
-        var sqlBuilder = new StringBuilder(filterFormuesfullmakt ? BaseSqlWithFormuesfullmaktFiltering : BaseSql);
+        var sqlBuilder = new StringBuilder(BaseSql);
         NpgsqlCommand cmd;
 
         if (estateSsn != null && recipientSsn != null)

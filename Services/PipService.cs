@@ -11,7 +11,7 @@ public class PipService : IPolicyInformationPointService
         _oedRoleRepositoryService = oedRoleRepositoryService;
     }
 
-    public async Task<PipResponse> HandlePipRequest(PipRequest pipRequest, bool filterFormuesfullmakt = false)
+    public async Task<PipResponse> HandlePipRequest(PipRequest pipRequest)
     {
         if (pipRequest.RecipientSsn is not null && !Utils.IsValidSsn(pipRequest.RecipientSsn))
         {
@@ -26,15 +26,15 @@ public class PipService : IPolicyInformationPointService
         List<RepositoryRoleAssignment> roleAssignments;
         if (pipRequest.RecipientSsn is not null && pipRequest.EstateSsn is not null)
         {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn, pipRequest.EstateSsn, filterFormuesFullmakt: filterFormuesfullmakt);
+            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn, pipRequest.EstateSsn);
         }
         else if (pipRequest.RecipientSsn is not null)
         {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn, filterFormuesFullmakt: filterFormuesfullmakt);
+            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn);
         }
         else if (pipRequest.EstateSsn is not null)
         {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(pipRequest.EstateSsn, filterFormuesFullmakt: filterFormuesfullmakt);
+            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(pipRequest.EstateSsn);
         }
         else
         {
