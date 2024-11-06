@@ -75,8 +75,8 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidateIssuer = false,
             ValidateAudience = false,
-            RequireExpirationTime = false,
-            ValidateLifetime = false,
+            RequireExpirationTime = true,
+            ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
     })
@@ -92,8 +92,8 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidateIssuer = false,
             ValidateAudience = false,
-            RequireExpirationTime = false,
-            ValidateLifetime = false,
+            RequireExpirationTime = true,
+            ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
     });
@@ -139,6 +139,8 @@ builder.Services.AddCors(options =>
                           .AllowAnyMethod()
                           .AllowAnyHeader());
 });
+
+IdentityModelEventSource.ShowPII = true;
 
 if (builder.Environment.IsDevelopment())
 {
