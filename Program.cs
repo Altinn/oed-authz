@@ -140,8 +140,6 @@ builder.Services.AddCors(options =>
                           .AllowAnyHeader());
 });
 
-IdentityModelEventSource.ShowPII = true;
-
 if (builder.Environment.IsDevelopment())
 {
     IdentityModelEventSource.ShowPII = true;
