@@ -1,71 +1,89 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy ASP.Net Core app to Azure Web App - oed-test-authz-app
+name: CI/CD authz-app
 
 on:
   push:
     branches:
       - master
-    paths-ignore:
-      - '**/**.md'
-  workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '7.x' # set this to the dotnet version to use
+  DOTNET_VERSION: '7.x' # Global environment variables
+  TEST_APP_SERVICE_NAME: 'oed-test-authz-app'
+  PROD_APP_SERVICE_NAME: 'oed-authz-app'
 
 jobs:
   build:
-    runs-on: windows-latest
-    environment: Test
+    name: Build and Test
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: GitHub metadata
+      run: |
+          echo "${{ GITHUB_REPOSITORY }} on ${{ GITHUB_REF_NAME }} by ${{ GITHUB_ACTOR }}"
+          
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Skriv ut GitHub metadata
-        run: |
-          echo "Repo: $GITHUB_REPOSITORY"
-          echo "Branch: $GITHUB_REF_NAME"
-          echo "Commit SHA: $GITHUB_SHA"
-          echo "Actor: $GITHUB_ACTOR"
-          echo "Run #: $GITHUB_RUN_NUMBER"
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          include-prerelease: true
+    - name: Build
+      run: dotnet publish -c Release -o ./publish
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+    - name: Run Tests
+      run: dotnet test --verbosity normal
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.GITHUB_WORKSPACE}}\myapp"
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: published-artifacts
+        path: ./publish
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: .net-app
-          path: ${{env.GITHUB_WORKSPACE}}\myapp
-
-  deploy:
-    runs-on: windows-latest
+  deploy-to-test:
+    name: Deploy to Test Environment
     needs: build
+    runs-on: ubuntu-latest
     environment:
-      name: 'Test'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      name: test
 
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: published-artifacts
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: 'oed-test-authz-app'
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-          package: .
+    - name: Deploy to Azure App Service (Test)
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: '${{ TEST_APP_SERVICE_NAME }}'
+        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+        package: ./published-artifacts
+
+  deploy-to-prod:
+    name: Deploy to Production Environment
+    needs: deploy-to-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+    - name: Await Manual Approval
+      if: ${{ github.ref == 'refs/heads/main' }}
+      run: |
+        echo "Waiting for manual approval"
+        echo "::pause::"
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: published-artifacts
+
+    - name: Deploy to Azure App Service (Prod)
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: '${{ PROD_APP_SERVICE_NAME }}'
+        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+        package: ./published-artifacts
