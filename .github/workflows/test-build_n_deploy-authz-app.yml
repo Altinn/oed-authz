@@ -41,7 +41,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: published-artifacts
-        path: ./publish
+        path: ./publish/
 
   deploy-to-test:
     name: Deploy to Test Environment
@@ -61,7 +61,7 @@ jobs:
       with:
         app-name: '${{ env.TEST_APP_SERVICE_NAME}}'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        package: ./publish
+        package: published-artifacts
 
   deploy-to-prod:
     name: Deploy to Production Environment
@@ -86,4 +86,4 @@ jobs:
       with:
         app-name: '${{ env.PROD_APP_SERVICE_NAME }}'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        package: ./publish
+        package: published-artifacts
