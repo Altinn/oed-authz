@@ -21,7 +21,7 @@ jobs:
       
     - name: GitHub metadata
       run: |
-          echo "${{ GITHUB_REPOSITORY }} on ${{ GITHUB_REF_NAME }} by ${{ GITHUB_ACTOR }}"
+          echo "$GITHUB_REPOSITORY on $GITHUB_REF_NAME by $GITHUB_ACTOR"
           
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
