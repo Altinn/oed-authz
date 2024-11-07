@@ -59,7 +59,7 @@ jobs:
     - name: Deploy to Azure App Service (Test)
       uses: azure/webapps-deploy@v2
       with:
-        app-name: '${{ TEST_APP_SERVICE_NAME }}'
+        app-name: '$TEST_APP_SERVICE_NAME'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
         package: ./published-artifacts
 
@@ -84,6 +84,6 @@ jobs:
     - name: Deploy to Azure App Service (Prod)
       uses: azure/webapps-deploy@v2
       with:
-        app-name: '${{ PROD_APP_SERVICE_NAME }}'
+        app-name: '$PROD_APP_SERVICE_NAME'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
         package: ./published-artifacts
