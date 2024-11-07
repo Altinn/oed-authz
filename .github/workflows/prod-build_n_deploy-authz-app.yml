@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - oed-prod-authz-app
+name: Prod-authz-app
 
 on:
   push:
@@ -35,7 +35,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          include-prerelease: true
 
       - name: dotnet publish
         run: dotnet publish -c Release -o "${{env.GITHUB_WORKSPACE}}\myapp"
