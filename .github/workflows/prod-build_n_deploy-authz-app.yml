@@ -63,6 +63,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'oed-authz-app'
-          slot-name: 'Production'
+          slot-name: ''
           publish-profile: ${{ secrets.PUBLISH_PROFILE }}
           package: .
