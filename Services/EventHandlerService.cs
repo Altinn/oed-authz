@@ -46,20 +46,37 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
             throw new ArgumentNullException(nameof(daEvent.Data));
         }
 
-        var updatedRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
-
         _logger.LogInformation("Handling event {Id}: {CloudEvent}", daEvent.Id, JsonSerializer.Serialize(daEvent));
 
-        // Get all current roles given from this estate
+        var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
         var estateSsn = Utils.GetEstateSsnFromCloudEvent(daEvent);
-        var currentRoleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn);
 
-        // Filter out all role assignments that are not court assigned
-        currentRoleAssignments = currentRoleAssignments.Where(x => x.RoleCode.StartsWith(Constants.CourtRoleCodePrefix)).ToList();
+        if (eventRoleAssignments.CaseStatus == CaseStatus.FEILFORT)
+        {
+            await RemoveAllRoleAssignmentsForEstate(estateSsn, daEvent.Id);
+        }
+        else
+        {
+            await UpdateCourtAssignedRoleAssignments(estateSsn, eventRoleAssignments, daEvent.Id, daEvent.Time);
+            // Handle collective proxy roles
+            await _proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
+        }
+    }
 
+    private async Task UpdateCourtAssignedRoleAssignments(
+        string estateSsn, 
+        EventRoleAssignmentDataDto eventRoleAssignments, 
+        string eventId,
+        DateTimeOffset eventTime)
+    {
+        // Get all current court assigned roles from this estate
+        var currentCourtAssignedRoleAssignments = (await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn))
+            .Where(x => x.RoleCode.StartsWith(Constants.CourtRoleCodePrefix))
+            .ToList();
+        
         // Find assignments in updated list but not in current list to add
         var assignmentsToAdd = new List<RepositoryRoleAssignment>();
-        foreach (var updatedRoleAssignment in updatedRoleAssignments.HeirRoles)
+        foreach (var updatedRoleAssignment in eventRoleAssignments.HeirRoles)
         {
             if (!Utils.IsValidSsn(updatedRoleAssignment.Nin))
             {
@@ -68,7 +85,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
 
             // Check if we have any current role assigments that are newer than this. If so, this means we're handling
             // an out-of-order and outdated event so we just bail.
-            if (currentRoleAssignments.Any(x => x.Created >= daEvent.Time))
+            if (currentCourtAssignedRoleAssignments.Any(x => x.Created >= eventTime))
             {
                 return;
             }
@@ -79,24 +96,29 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
                 throw new ArgumentException("Rolecode must start with " + Constants.CourtRoleCodePrefix);
             }
 
-            if (!currentRoleAssignments.Exists(x => x.RecipientSsn == updatedRoleAssignment.Nin && x.RoleCode == updatedRoleAssignment.Role))
+            if (!currentCourtAssignedRoleAssignments
+                .Exists(x => 
+                    x.RecipientSsn == updatedRoleAssignment.Nin && 
+                    x.RoleCode == updatedRoleAssignment.Role))
             {
                 assignmentsToAdd.Add(new RepositoryRoleAssignment
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = updatedRoleAssignment.Nin,
                     RoleCode = updatedRoleAssignment.Role,
-                    Created = daEvent.Time
+                    Created = eventTime
                 });
             }
         }
 
         // Find assignments in current list that's not in the updated list. These should be removed.
         var assignmentsToRemove = new List<RepositoryRoleAssignment>();
-        foreach (var currentRoleAssignment in currentRoleAssignments)
+        foreach (var currentRoleAssignment in currentCourtAssignedRoleAssignments)
         {
-            if (!updatedRoleAssignments.HeirRoles.Exists(x =>
-                    x.Nin == currentRoleAssignment.RecipientSsn && x.Role == currentRoleAssignment.RoleCode))
+            if (!eventRoleAssignments.HeirRoles
+                .Exists(x =>
+                    x.Nin == currentRoleAssignment.RecipientSsn && 
+                    x.Role == currentRoleAssignment.RoleCode))
             {
                 assignmentsToRemove.Add(new RepositoryRoleAssignment
                 {
@@ -108,7 +130,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
         }
 
         _logger.LogInformation("Handling event {Id}: {AssignmentsToAdd} assignments to add and {AssignmentsToRemove} assignments to remove",
-            daEvent.Id, assignmentsToAdd.Count, assignmentsToRemove.Count);
+            eventId, assignmentsToAdd.Count, assignmentsToRemove.Count);
 
         foreach (var roleAssignment in assignmentsToAdd)
         {
@@ -119,8 +141,19 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
         {
             await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
         }
+    }
 
-        // Handle collective proxy roles
-        await _proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
+    private async Task RemoveAllRoleAssignmentsForEstate(string estateSsn, string eventId)
+    {
+        // Get all current roles from this estate
+        var assignmentsToRemove = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn);
+
+        _logger.LogInformation("Handling event {Id}: Removing all assignments ({AssignmentsToRemove})",
+            eventId, assignmentsToRemove.Count);
+
+        foreach (var roleAssignment in assignmentsToRemove)
+        {
+            await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
+        }
     }
 }
