@@ -55,13 +55,14 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: published-artifacts
+        path: ./publish/
 
     - name: Deploy to Azure App Service (Test)
       uses: azure/webapps-deploy@v2
       with:
         app-name: '${{ env.TEST_APP_SERVICE_NAME}}'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        package: published-artifacts
+        package: ./publish/
 
   deploy-to-prod:
     name: Deploy to Production Environment
@@ -80,10 +81,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: published-artifacts
+        path: ./publish/
 
     - name: Deploy to Azure App Service (Prod)
       uses: azure/webapps-deploy@v2
       with:
         app-name: '${{ env.PROD_APP_SERVICE_NAME }}'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        package: published-artifacts
+        package: ./publish/
