@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-
+  workflow_dispatch:
 env:
   DOTNET_VERSION: '8.x' # Global environment variables
   TEST_APP_SERVICE_NAME: 'oed-test-authz-app'
