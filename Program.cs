@@ -1,9 +1,12 @@
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using oed_authz.Authorization;
+using oed_authz.HealthChecks;
 using oed_authz.Helpers;
 using oed_authz.Interfaces;
 using oed_authz.Services;
@@ -18,6 +21,10 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<Secrets>(builder.Configuration.GetSection(Constants.ConfigurationSectionSecrets));
 builder.Services.Configure<GeneralSettings>(builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings));
+
+//TODO: Legg til flere relevante sjekker
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 builder.Services.AddSingleton<IAltinnEventHandlerService, AltinnEventHandlerService>();
 builder.Services.AddSingleton<IOedRoleRepositoryService, OedRoleRepositoryService>();
@@ -150,6 +157,18 @@ var app = builder.Build();
 
 app.UseCors("AllowAzurePortal");
 
+//TODO: Fjern denne når platform har endret TF
+app.MapHealthChecks("/", new HealthCheckOptions
+{
+    ResponseWriter = JsonHealthResponseWriter.WriteResponseAsync
+});
+
+// Helsesjekk på /health
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter =JsonHealthResponseWriter.WriteResponseAsync
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -159,7 +178,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
 
 var traceService = new ConsoleTraceService { IsDebugEnabled = true };
 app.UseYuniql(
