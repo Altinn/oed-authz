@@ -6,9 +6,10 @@ on:
       - master
 
 env:
-  DOTNET_VERSION: '7.x' # Global environment variables
+  DOTNET_VERSION: '8.x' # Global environment variables
   TEST_APP_SERVICE_NAME: 'oed-test-authz-app'
   PROD_APP_SERVICE_NAME: 'oed-authz-app'
+  PROD_RESOURCE_GROUP_NAME: 'altinn-digdir-oed-rg'
 
 jobs:
   build:
@@ -83,9 +84,20 @@ jobs:
         name: published-artifacts
         path: ./publish/
 
-    - name: Deploy to Azure App Service (Prod)
+    - name: Deploy to Azure App Service Staging Slot
       uses: azure/webapps-deploy@v2
       with:
         app-name: '${{ env.PROD_APP_SERVICE_NAME }}'
+        slot-name: 'staging'
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
         package: ./publish/
+
+    - name: Swap Staging Slot to Production
+      uses: azure/cli@v1
+      with:
+        azcliversion: 2.48.1 # Oppdater versjonen hvis nødvendig
+        inlineScript: |
+          az webapp deployment slot swap \
+            --name ${{ env.PROD_APP_SERVICE_NAME }} \
+            --resource-group ${{ env.PROD_RESOURCE_GROUP_NAME }} \
+            --slot staging
