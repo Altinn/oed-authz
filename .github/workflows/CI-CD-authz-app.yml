@@ -10,7 +10,7 @@ env:
   TEST_APP_SERVICE_NAME: 'oed-test-authz-app'
   PROD_APP_SERVICE_NAME: 'oed-authz-app'
   PROD_RESOURCE_GROUP_NAME: 'altinn-digdir-oed-rg'
-  PROD_APP_SLOT_NAME: 'oed-authz-app-staging'
+  PROD_APP_SLOT_NAME: 'staging'
 
 jobs:
   build:
