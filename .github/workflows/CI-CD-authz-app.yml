@@ -10,7 +10,7 @@ env:
   TEST_APP_SERVICE_NAME: 'oed-test-authz-app'
   PROD_APP_SERVICE_NAME: 'oed-authz-app'
   PROD_RESOURCE_GROUP_NAME: 'altinn-digdir-oed-rg'
-  PROD_APP_SLOT_NAME: 'staging'
+  PROD_APP_SLOT_NAME: 'production'
 
 jobs:
   build:
@@ -92,4 +92,3 @@ jobs:
         slot-name: ${{ ENV.PROD_APP_SLOT_NAME }}
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
         package: ./publish/
-        swap-with-production: true
