@@ -92,13 +92,4 @@ jobs:
         slot-name: ${{ ENV.PROD_APP_SLOT_NAME }}
         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
         package: ./publish/
-
-    - name: Swap Staging Slot to Production
-      uses: azure/cli@v1
-      with:
-        azcliversion: 2.48.1 # Oppdater versjonen hvis nødvendig
-        inlineScript: |
-          az webapp deployment slot swap \
-            --name ${{ env.PROD_APP_SERVICE_NAME }} \
-            --resource-group ${{ env.PROD_RESOURCE_GROUP_NAME }} \
-            --slot ${{ ENV.PROD_APP_SLOT_NAME }}
+        swap-with-production: true
