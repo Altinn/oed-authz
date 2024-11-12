@@ -4,9 +4,9 @@ using oed_authz.Models;
 namespace oed_authz.Services;
 public class PipService : IPolicyInformationPointService
 {
-    private readonly IOedRoleRepositoryService _oedRoleRepositoryService;
+    private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
 
-    public PipService(IOedRoleRepositoryService oedRoleRepositoryService)
+    public PipService(IRoleAssignmentsRepository oedRoleRepositoryService)
     {
         _oedRoleRepositoryService = oedRoleRepositoryService;
     }
@@ -23,7 +23,7 @@ public class PipService : IPolicyInformationPointService
             throw new ArgumentException(nameof(pipRequest.EstateSsn));
         }
 
-        List<RepositoryRoleAssignment> roleAssignments;
+        List<RoleAssignment> roleAssignments;
         if (pipRequest.RecipientSsn is not null && pipRequest.EstateSsn is not null)
         {
             roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn, pipRequest.EstateSsn);

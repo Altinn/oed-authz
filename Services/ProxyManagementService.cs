@@ -7,11 +7,11 @@ namespace oed_authz.Services;
 
 public class ProxyManagementService : IProxyManagementService
 {
-    private readonly IOedRoleRepositoryService _oedRoleRepositoryService;
+    private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
     private readonly ILogger<ProxyManagementService> _logger;
 
     public ProxyManagementService(
-        IOedRoleRepositoryService oedRoleRepositoryService,
+        IRoleAssignmentsRepository oedRoleRepositoryService,
         ILogger<ProxyManagementService> logger)
     {
         _oedRoleRepositoryService = oedRoleRepositoryService;
@@ -22,7 +22,7 @@ public class ProxyManagementService : IProxyManagementService
     {
         await ValidateRequest(proxyManagementRequest);
 
-        var roleAssignment = new RepositoryRoleAssignment
+        var roleAssignment = new RoleAssignment
         {
             EstateSsn = proxyManagementRequest.EstateSsn,
             HeirSsn = proxyManagementRequest.ProxyRoleAssignment.HeirSsn,
@@ -39,7 +39,7 @@ public class ProxyManagementService : IProxyManagementService
     {
         await ValidateRequest(proxyManagementRequest);
 
-        var roleAssignment = new RepositoryRoleAssignment
+        var roleAssignment = new RoleAssignment
         {
             EstateSsn = proxyManagementRequest.EstateSsn,
             HeirSsn =  proxyManagementRequest.ProxyRoleAssignment.HeirSsn,
@@ -68,7 +68,7 @@ public class ProxyManagementService : IProxyManagementService
             _logger.LogInformation("Removing no longer valid individual proxy assignment: {InvalidIndividualProxyAssignment}",
                 JsonSerializer.Serialize(invalidIndividualProxyAssignment));
             await _oedRoleRepositoryService.RemoveRoleAssignment(
-                new RepositoryRoleAssignment
+                new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     HeirSsn = invalidIndividualProxyAssignment.HeirSsn,
@@ -92,7 +92,7 @@ public class ProxyManagementService : IProxyManagementService
         {
             _logger.LogInformation("Granting collective proxy role to eligible recipient: {EligibleRecipient}", eligibleRecipient);
             await _oedRoleRepositoryService.AddRoleAssignment(
-                new RepositoryRoleAssignment
+                new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = eligibleRecipient,
@@ -111,7 +111,7 @@ public class ProxyManagementService : IProxyManagementService
             _logger.LogInformation("Revoking collective proxy role from no longer eligible recipient: {NoLongerEligbleRecipient}",
                 JsonSerializer.Serialize(noLongerEligbleRecipient));
             await _oedRoleRepositoryService.RemoveRoleAssignment(
-                new RepositoryRoleAssignment
+                new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = noLongerEligbleRecipient.RecipientSsn,
@@ -154,8 +154,8 @@ public class ProxyManagementService : IProxyManagementService
     }
 
     private static List<string> GetEligibleCollectiveProxyRecipients(
-        List<RepositoryRoleAssignment> heirRoleAssignments,
-        List<RepositoryRoleAssignment> individualProxyRoleAssignments)
+        List<RoleAssignment> heirRoleAssignments,
+        List<RoleAssignment> individualProxyRoleAssignments)
     {
         // Get the recipients that have been given a proxy role by all heir with the probate role
         var heirsWithProbateRoles = heirRoleAssignments.Select(x => x.RecipientSsn).Distinct();

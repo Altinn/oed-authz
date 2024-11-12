@@ -7,12 +7,12 @@ using oed_authz.Settings;
 namespace oed_authz.Services;
 public class AltinnEventHandlerService : IAltinnEventHandlerService
 {
-    private readonly IOedRoleRepositoryService _oedRoleRepositoryService;
+    private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
     private readonly IProxyManagementService _proxyManagementService;
     private readonly ILogger<AltinnEventHandlerService> _logger;
 
     public AltinnEventHandlerService(
-        IOedRoleRepositoryService oedRoleRepositoryService,
+        IRoleAssignmentsRepository oedRoleRepositoryService,
         IProxyManagementService proxyManagementService,
         ILogger<AltinnEventHandlerService> logger)
     {
@@ -75,7 +75,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
             .ToList();
         
         // Find assignments in updated list but not in current list to add
-        var assignmentsToAdd = new List<RepositoryRoleAssignment>();
+        var assignmentsToAdd = new List<RoleAssignment>();
         foreach (var updatedRoleAssignment in eventRoleAssignments.HeirRoles)
         {
             if (!Utils.IsValidSsn(updatedRoleAssignment.Nin))
@@ -101,7 +101,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
                     x.RecipientSsn == updatedRoleAssignment.Nin && 
                     x.RoleCode == updatedRoleAssignment.Role))
             {
-                assignmentsToAdd.Add(new RepositoryRoleAssignment
+                assignmentsToAdd.Add(new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = updatedRoleAssignment.Nin,
@@ -112,7 +112,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
         }
 
         // Find assignments in current list that's not in the updated list. These should be removed.
-        var assignmentsToRemove = new List<RepositoryRoleAssignment>();
+        var assignmentsToRemove = new List<RoleAssignment>();
         foreach (var currentRoleAssignment in currentCourtAssignedRoleAssignments)
         {
             if (!eventRoleAssignments.HeirRoles
@@ -120,7 +120,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
                     x.Nin == currentRoleAssignment.RecipientSsn && 
                     x.Role == currentRoleAssignment.RoleCode))
             {
-                assignmentsToRemove.Add(new RepositoryRoleAssignment
+                assignmentsToRemove.Add(new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = currentRoleAssignment.RecipientSsn,

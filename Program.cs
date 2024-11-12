@@ -1,18 +1,17 @@
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using oed_authz.Authorization;
 using oed_authz.HealthChecks;
-using oed_authz.Helpers;
+using oed_authz.Infrastructure.Database;
 using oed_authz.Interfaces;
+using oed_authz.Repositories;
 using oed_authz.Services;
 using oed_authz.Settings;
-using Yuniql.AspNetCore;
-using Yuniql.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,12 +25,14 @@ builder.Services.Configure<GeneralSettings>(builder.Configuration.GetSection(Con
 builder.Services.AddHealthChecks()
     .AddCheck<HealthCheck>("health_check");
 
-builder.Services.AddSingleton<IAltinnEventHandlerService, AltinnEventHandlerService>();
-builder.Services.AddSingleton<IOedRoleRepositoryService, OedRoleRepositoryService>();
-builder.Services.AddSingleton<IPolicyInformationPointService, PipService>();
-builder.Services.AddSingleton<IProxyManagementService, ProxyManagementService>();
+builder.Services.AddScoped<IAltinnEventHandlerService, AltinnEventHandlerService>();
+builder.Services.AddScoped<IPolicyInformationPointService, PipService>();
+builder.Services.AddScoped<IProxyManagementService, ProxyManagementService>();
 builder.Services.AddScoped<IAuthorizationHandler, QueryParamRequirementHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ScopeRequirementHandler>();
+builder.Services.AddScoped<IRoleAssignmentsRepository, RoleAssignmentsRepository>();
+
+builder.Services.AddOedAuthzDatabase(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
@@ -141,10 +142,11 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAzurePortal",
-        builder => builder.WithOrigins("https://portal.azure.com")
-                          .AllowAnyMethod()
-                          .AllowAnyHeader());
+    options.AddPolicy("AllowAzurePortal", builder => 
+        builder
+            .WithOrigins("https://portal.azure.com")
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 if (builder.Environment.IsDevelopment())
@@ -166,7 +168,7 @@ app.MapHealthChecks("/", new HealthCheckOptions
 // Helsesjekk på /health
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    ResponseWriter =JsonHealthResponseWriter.WriteResponseAsync
+    ResponseWriter = JsonHealthResponseWriter.WriteResponseAsync
 });
 
 app.UseSwagger();
@@ -179,18 +181,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-var traceService = new ConsoleTraceService { IsDebugEnabled = true };
-app.UseYuniql(
-    new PostgreSqlDataService(traceService),
-    new PostgreSqlBulkImportService(traceService),
-    traceService,
-    new Configuration
-    {
-        Workspace = Path.Combine(Environment.CurrentDirectory, "Migrations"),
-        ConnectionString = builder.Configuration.GetSection(Constants.ConfigurationSectionSecrets)[
-            nameof(Secrets.PostgreSqlAdminConnectionString)]!,
-        IsAutoCreateDatabase = false,
-        IsDebug = true
-    });
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<OedAuthzDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

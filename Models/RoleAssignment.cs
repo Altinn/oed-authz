@@ -1,5 +1,6 @@
 ﻿namespace oed_authz.Models;
-public class RepositoryRoleAssignment
+
+public class RoleAssignment
 {
     public long Id { get; set; }
     public string RoleCode { get; set; } = string.Empty;
