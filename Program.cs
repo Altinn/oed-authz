@@ -181,10 +181,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<OedAuthzDbContext>();
-    db.Database.Migrate();
-}
+// Running database migrations on startup
+await app.MigrateOedAuthzDatabase();
 
 app.Run();
