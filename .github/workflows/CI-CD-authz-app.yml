@@ -44,11 +44,6 @@ jobs:
       with:
         name: published-artifacts
         path: ./publish/
-
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_SERVICE_PRINCIPAL }}
         
   deploy-to-test:
     name: Deploy to Test Environment
