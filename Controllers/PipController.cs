@@ -45,10 +45,6 @@ public class PipController : Controller
 
         var pipResponse = await _pipService.HandlePipRequest(pipRequest);
 
-        // The roles where there is an heir involved will have three parties (estate, heir and recipient) and
-        // is thus not appropiate for this endpoint. This includes the individual proxy role.
-        RemoveIndividualProxyRole(pipResponse);
-
         var pipRoleAssignmentsDto = pipResponse.RoleAssignments.Select(assignment =>
             new PipRoleAssignmentDto
             {
@@ -64,10 +60,5 @@ public class PipController : Controller
         };
 
         return pipResponseDto;
-    }
-
-    private void RemoveIndividualProxyRole(PipResponse pipResponse)
-    {
-        pipResponse.RoleAssignments = pipResponse.RoleAssignments.Where(x => !x.RoleCode.Equals(Constants.IndividualProxyRoleCode)).ToList();
     }
 }
