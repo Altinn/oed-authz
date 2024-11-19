@@ -11,7 +11,9 @@ namespace oed_authz.Repositories
         private readonly OedAuthzDbContext _dbContext;
         private readonly ILogger<RoleAssignmentsRepository> _logger;
 
-        public RoleAssignmentsRepository(OedAuthzDbContext dbContext, ILogger<RoleAssignmentsRepository> logger)
+        public RoleAssignmentsRepository(
+            OedAuthzDbContext dbContext, 
+            ILogger<RoleAssignmentsRepository> logger)
         {
             _dbContext = dbContext;
             _logger = logger;
@@ -19,56 +21,37 @@ namespace oed_authz.Repositories
 
         public async Task AddRoleAssignment(RoleAssignment roleAssignment)
         {
-            _logger.LogInformation("Granting role: {RoleAssignment}", JsonSerializer.Serialize(roleAssignment));
+            _logger.LogInformation("Granting role: {RoleAssignment}", 
+                JsonSerializer.Serialize(roleAssignment));
+
             await _dbContext.RoleAssignments.AddAsync(roleAssignment);
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<List<RoleAssignment>> GetRoleAssignmentsForEstate(string estateSsn, string? filterRecipentSsn = null, string? filterRoleCode = null)
+        public Task<List<RoleAssignment>> GetRoleAssignmentsForEstate(string estateSsn)
         {
-            var query = _dbContext.RoleAssignments
-                .Where(ra => ra.EstateSsn == estateSsn);
-
-            if (filterRecipentSsn != null)
-            {
-                query = query.Where(ra => ra.RecipientSsn == filterRecipentSsn);
-            }
-
-            if (filterRoleCode != null)
-            {
-                query = query.Where(ra => ra.RoleCode == filterRoleCode);
-            }
-
-            return await query
+            return _dbContext.RoleAssignments
+                .Where(ra => ra.EstateSsn == estateSsn)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        public async Task<List<RoleAssignment>> GetRoleAssignmentsForPerson(string recipientSsn, string? filterEstateSsn = null, string? filterRoleCode = null)
+        public Task<List<RoleAssignment>> GetRoleAssignmentsForPerson(string estateSsn, string recipientSsn)
         {
-            var query = _dbContext.RoleAssignments
-                .Where(ra => ra.RecipientSsn == recipientSsn);
-
-            if (filterEstateSsn != null)
-            {
-                query = query.Where(ra => ra.EstateSsn == filterEstateSsn);
-            }
-
-            if (filterRoleCode != null)
-            {
-                query = query.Where(ra => ra.RoleCode == filterRoleCode);
-            }
-            
-            return await query
+            return _dbContext.RoleAssignments
+                .Where(ra =>                     
+                    ra.EstateSsn == estateSsn
+                    && ra.RecipientSsn == recipientSsn)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        public async Task RemoveRoleAssignment(RoleAssignment roleAssignment)
+        public Task RemoveRoleAssignment(RoleAssignment roleAssignment)
         {
-            _logger.LogInformation("Revoking role: {RoleAssignment}", JsonSerializer.Serialize(roleAssignment));
+            _logger.LogInformation("Revoking role: {RoleAssignment}",
+                JsonSerializer.Serialize(roleAssignment));
 
-            await _dbContext.RoleAssignments
+            return _dbContext.RoleAssignments
                 .Where(ra =>
                     ra.EstateSsn == roleAssignment.EstateSsn
                     && ra.RecipientSsn == roleAssignment.RecipientSsn

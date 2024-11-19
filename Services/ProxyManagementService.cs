@@ -143,11 +143,10 @@ public class ProxyManagementService : IProxyManagementService
         }
 
         // We need to check if "from" has the probate role for the given estate
-        var heirRoles = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(
-            proxyManagementRequest.EstateSsn,
-            proxyManagementRequest.ProxyRoleAssignment.HeirSsn,
-            Constants.ProbateRoleCode);
-        if (heirRoles.Count == 0)
+        var heirRoles = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(
+            proxyManagementRequest.EstateSsn, proxyManagementRequest.ProxyRoleAssignment.HeirSsn);
+
+        if (!heirRoles.Any(ra => ra.RoleCode == Constants.ProbateRoleCode))
         {
             throw new InvalidOperationException("The heir does not have the probate role for the given estate");
         }

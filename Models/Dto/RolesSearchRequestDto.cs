@@ -2,6 +2,6 @@
 
 public class RolesSearchRequestDto
 {
-    public string? EstateSsn { get; set; }
+    public required string EstateSsn { get; set; }
     public string? RecipientSsn { get; set; }
 }

@@ -26,11 +26,8 @@ public class PipService : IPolicyInformationPointService
         List<RoleAssignment> roleAssignments;
         if (pipRequest.RecipientSsn is not null && pipRequest.EstateSsn is not null)
         {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn, pipRequest.EstateSsn);
-        }
-        else if (pipRequest.RecipientSsn is not null)
-        {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(pipRequest.RecipientSsn);
+            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(
+                pipRequest.EstateSsn, pipRequest.RecipientSsn);
         }
         else if (pipRequest.EstateSsn is not null)
         {

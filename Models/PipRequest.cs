@@ -2,6 +2,6 @@
 
 public class PipRequest
 {
-    public string? EstateSsn { get; init; }
+    public required string EstateSsn { get; init; }
     public string? RecipientSsn { get; init; }
 }
