@@ -34,10 +34,13 @@ jobs:
       run: dotnet restore
 
     - name: Build
-      run: dotnet publish -c Release -o ./publish
+      run: dotnet build -c Release
 
     - name: Run Tests
-      run: dotnet test --verbosity normal
+      run: dotnet test -c Release --no-build --verbosity normal
+
+    - name: Publish
+      run: dotnet publish ./src/oed-authz/oed-authz.csproj --no-build -c Release -o ./publish 
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v3
