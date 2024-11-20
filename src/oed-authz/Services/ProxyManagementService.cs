@@ -57,35 +57,50 @@ public class ProxyManagementService : IProxyManagementService
         // If so, that recipient should be given the collective proxy role from the estate it self.
         var roleAssignmentsForEstate = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn);
 
-        var heirsWithProbateRole = roleAssignmentsForEstate.Where(x => x.RoleCode == Constants.ProbateRoleCode).ToList();
-        var individualProxyAssigments = roleAssignmentsForEstate.Where(x => x.RoleCode == Constants.IndividualProxyRoleCode).ToList();
+        var heirsWithProbateRole = roleAssignmentsForEstate
+            .Where(x => x.RoleCode == Constants.ProbateRoleCode)
+            .ToList();
+
+        var individualProxyAssigments = roleAssignmentsForEstate
+            .Where(x => x.RoleCode == Constants.IndividualProxyRoleCode)
+            .ToList();
 
         // If there are any individual proxy assignments from heirs without probate role, those assignments are no longer valid and must be removed
-        var invalidIndividualProxyAssignments = individualProxyAssigments.Where(x =>
-            heirsWithProbateRole.All(y => y.RecipientSsn != x.HeirSsn)).ToList();
+        var invalidIndividualProxyAssignments = individualProxyAssigments
+            .Where(x => heirsWithProbateRole
+                .All(y => y.RecipientSsn != x.HeirSsn))
+            .ToList();
+
         foreach (var invalidIndividualProxyAssignment in invalidIndividualProxyAssignments)
         {
             _logger.LogInformation("Removing no longer valid individual proxy assignment: {InvalidIndividualProxyAssignment}",
                 JsonSerializer.Serialize(invalidIndividualProxyAssignment));
+
             await _oedRoleRepositoryService.RemoveRoleAssignment(
                 new RoleAssignment
                 {
                     EstateSsn = estateSsn,
                     HeirSsn = invalidIndividualProxyAssignment.HeirSsn,
                     RecipientSsn = invalidIndividualProxyAssignment.RecipientSsn,
-                    RoleCode = Constants.IndividualProxyRoleCode
                 });
         }
         // Update the list of individual proxy assignments to only contain valid assignments
-        individualProxyAssigments = individualProxyAssigments.Where(x =>
-            heirsWithProbateRole.Any(y => y.RecipientSsn == x.HeirSsn)).ToList();
+        individualProxyAssigments = individualProxyAssigments
+            .Where(x => heirsWithProbateRole
+                .Any(y => y.RecipientSsn == x.HeirSsn))
+            .ToList();
 
-        var collectiveProxyAssigments = roleAssignmentsForEstate.Where(x => x.RoleCode == Constants.CollectiveProxyRoleCode).ToList();
+        var collectiveProxyAssigments = roleAssignmentsForEstate
+            .Where(x => x.RoleCode == Constants.CollectiveProxyRoleCode)
+            .ToList();
+
         var eligibleCollectiveProxyRecipients = GetEligibleCollectiveProxyRecipients(heirsWithProbateRole, individualProxyAssigments);
 
         // Find the eligible recipients that does not already have the collective proxy role
-        var eligibleRecipientsWithoutCollectiveProxyRole = eligibleCollectiveProxyRecipients.Where(x =>
-            collectiveProxyAssigments.All(y => y.RecipientSsn != x)).ToList();
+        var eligibleRecipientsWithoutCollectiveProxyRole = eligibleCollectiveProxyRecipients
+            .Where(x => collectiveProxyAssigments
+                .All(y => y.RecipientSsn != x))
+            .ToList();
 
         // Grant the collective proxy role to the eligible recipients
         foreach (var eligibleRecipient in eligibleRecipientsWithoutCollectiveProxyRole)
@@ -102,14 +117,17 @@ public class ProxyManagementService : IProxyManagementService
         }
 
         // Find any recipients that have the collective proxy role, but should not have it anymore
-        var noLongerEligbleRecipientsWithCollectiveProxyRole = collectiveProxyAssigments.Where(x =>
-            !eligibleCollectiveProxyRecipients.Contains(x.RecipientSsn)).ToList();
+        var noLongerEligbleRecipientsWithCollectiveProxyRole = collectiveProxyAssigments
+            .Where(x => !eligibleCollectiveProxyRecipients
+                .Contains(x.RecipientSsn))
+            .ToList();
 
         // Revoke the collective proxy role from the recipients that should no longer have it
         foreach (var noLongerEligbleRecipient in noLongerEligbleRecipientsWithCollectiveProxyRole)
         {
             _logger.LogInformation("Revoking collective proxy role from no longer eligible recipient: {NoLongerEligbleRecipient}",
                 JsonSerializer.Serialize(noLongerEligbleRecipient));
+
             await _oedRoleRepositoryService.RemoveRoleAssignment(
                 new RoleAssignment
                 {
@@ -146,7 +164,7 @@ public class ProxyManagementService : IProxyManagementService
         var heirRoles = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(
             proxyManagementRequest.EstateSsn, proxyManagementRequest.ProxyRoleAssignment.HeirSsn);
 
-        if (!heirRoles.Any(ra => ra.RoleCode == Constants.ProbateRoleCode))
+        if (heirRoles.All(ra => ra.RoleCode != Constants.ProbateRoleCode))
         {
             throw new InvalidOperationException("The heir does not have the probate role for the given estate");
         }
@@ -157,10 +175,14 @@ public class ProxyManagementService : IProxyManagementService
         List<RoleAssignment> individualProxyRoleAssignments)
     {
         // Get the recipients that have been given a proxy role by all heir with the probate role
-        var heirsWithProbateRoles = heirRoleAssignments.Select(x => x.RecipientSsn).Distinct();
+        var heirsWithProbateRoles = heirRoleAssignments
+            .Select(x => x.RecipientSsn)
+            .Distinct()
+            .ToList();
+
         var eligibleCollectiveProxyRecipients = individualProxyRoleAssignments
             .GroupBy(x => x.RecipientSsn)
-            .Where(x => x.Count() == heirsWithProbateRoles.Count())
+            .Where(x => x.Count() == heirsWithProbateRoles.Count)
             .Select(x => x.Key)
             .ToList();
 
@@ -169,9 +191,13 @@ public class ProxyManagementService : IProxyManagementService
         // other than themselves have given them a proxy role
         foreach (var heirWithProbateRole in heirsWithProbateRoles)
         {
-            var otherHeirsWithProbateRoles = heirsWithProbateRoles.Where(x => x != heirWithProbateRole).ToList();
+            var otherHeirsWithProbateRoles = heirsWithProbateRoles
+                .Where(x => x != heirWithProbateRole)
+                .ToList();
+
             var otherHeirsWithProbateRolesThatHaveGivenProxyRoleToHeir = individualProxyRoleAssignments
-                .Where(x => otherHeirsWithProbateRoles.Contains(x.RecipientSsn))
+                .Where(x => otherHeirsWithProbateRoles
+                    .Contains(x.RecipientSsn))
                 .Select(x => x.RecipientSsn)
                 .Distinct()
                 .ToList();

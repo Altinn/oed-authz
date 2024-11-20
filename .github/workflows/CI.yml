@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+    branches:
+      - master
+env:
+  DOTNET_VERSION: '8.x' # Global environment variables
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: GitHub metadata
+      run: |
+          printf "%s on %s by %s\n" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" "$GITHUB_ACTOR"
+          
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build -c Release
+
+    - name: Run Tests
+      run: dotnet test -c Release --no-build --verbosity normal        
