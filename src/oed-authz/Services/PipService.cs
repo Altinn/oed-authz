@@ -2,46 +2,30 @@
 using oed_authz.Models;
 
 namespace oed_authz.Services;
-public class PipService : IPolicyInformationPointService
+public class PipService(IRoleAssignmentsRepository repository) 
+    : IPolicyInformationPointService
 {
-    private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
-
-    public PipService(IRoleAssignmentsRepository oedRoleRepositoryService)
-    {
-        _oedRoleRepositoryService = oedRoleRepositoryService;
-    }
-
     public async Task<PipResponse> HandlePipRequest(PipRequest pipRequest)
     {
+        // EstateSsn is required for now
+        if (string.IsNullOrWhiteSpace(pipRequest.EstateSsn) || !Utils.IsValidSsn(pipRequest.EstateSsn))
+        {
+            throw new ArgumentException($"Invalid {nameof(pipRequest.EstateSsn)}", nameof(pipRequest));
+        }
+
         if (pipRequest.RecipientSsn is not null && !Utils.IsValidSsn(pipRequest.RecipientSsn))
         {
-            throw new ArgumentException(nameof(pipRequest.RecipientSsn));
+            throw new ArgumentException($"Invalid {nameof(pipRequest.RecipientSsn)}", nameof(pipRequest));
         }
 
-        if (pipRequest.EstateSsn is not null && !Utils.IsValidSsn(pipRequest.EstateSsn))
-        {
-            throw new ArgumentException(nameof(pipRequest.EstateSsn));
-        }
+        var roleAssignments = pipRequest.RecipientSsn is not null
+            ? await repository.GetRoleAssignmentsForPerson(pipRequest.EstateSsn, pipRequest.RecipientSsn)
+            : await repository.GetRoleAssignmentsForEstate(pipRequest.EstateSsn);
 
-        List<RoleAssignment> roleAssignments;
-        if (pipRequest.RecipientSsn is not null && pipRequest.EstateSsn is not null)
-        {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForPerson(
-                pipRequest.EstateSsn, pipRequest.RecipientSsn);
-        }
-        else if (pipRequest.EstateSsn is not null)
-        {
-            roleAssignments = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(pipRequest.EstateSsn);
-        }
-        else
-        {
-            throw new ArgumentNullException(nameof(pipRequest), "Both recipientSsn and estateSsn cannot be null");
-        }
-
-        var pipRoleAssignments = new List<PipRoleAssignment>();
-        foreach (var result in roleAssignments)
-        {
-            pipRoleAssignments.Add(new PipRoleAssignment
+        return new PipResponse { 
+            EstateSsn = pipRequest.EstateSsn,
+            RoleAssignments = roleAssignments
+            .Select(result => new PipRoleAssignment
             {
                 Id = result.Id,
                 EstateSsn = result.EstateSsn,
@@ -49,9 +33,8 @@ public class PipService : IPolicyInformationPointService
                 Created = result.Created,
                 HeirSsn = result.HeirSsn,
                 RecipientSsn = result.RecipientSsn
-            });
-        }
-
-        return new PipResponse { RoleAssignments = pipRoleAssignments };
+            })
+            .ToList()
+        };
     }
 }
