@@ -8,7 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOedAuthzDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContextPool<OedAuthzDbContext>((IServiceProvider provider, DbContextOptionsBuilder optionsBuilder) =>
+        services.AddDbContextPool<OedAuthzDbContext>((provider, optionsBuilder) =>
         {
             var secrets = provider.GetRequiredService<IOptions<Secrets>>();
             optionsBuilder.UseNpgsql(secrets.Value.PostgreSqlUserConnectionString);
@@ -35,7 +35,7 @@ public static class WebAppExtensions
             .UseNpgsql(secrets.Value.PostgreSqlAdminConnectionString)
             .UseLoggerFactory(loggerFactory);
 
-        using var dbContext = new OedAuthzDbContext(optionsBuilder.Options);
+        await using var dbContext = new OedAuthzDbContext(optionsBuilder.Options);
         await dbContext.Database.MigrateAsync();
     }
 }
