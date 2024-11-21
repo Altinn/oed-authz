@@ -178,11 +178,11 @@ public class ProxyManagementService : IProxyManagementService
         var heirsWithProbateRoles = heirRoleAssignments
             .Select(x => x.RecipientSsn)
             .Distinct()
-            .ToList();
+            .ToArray();
 
         var eligibleCollectiveProxyRecipients = individualProxyRoleAssignments
             .GroupBy(x => x.RecipientSsn)
-            .Where(x => x.Count() == heirsWithProbateRoles.Count)
+            .Where(x => x.Count() == heirsWithProbateRoles.Length)
             .Select(x => x.Key)
             .ToList();
 
@@ -193,16 +193,17 @@ public class ProxyManagementService : IProxyManagementService
         {
             var otherHeirsWithProbateRoles = heirsWithProbateRoles
                 .Where(x => x != heirWithProbateRole)
-                .ToList();
+                .ToArray();
 
             var otherHeirsWithProbateRolesThatHaveGivenProxyRoleToHeir = individualProxyRoleAssignments
-                .Where(x => otherHeirsWithProbateRoles
-                    .Contains(x.RecipientSsn))
-                .Select(x => x.RecipientSsn)
+                .Where(x =>
+                    x.RecipientSsn == heirWithProbateRole
+                    && otherHeirsWithProbateRoles.Contains(x.HeirSsn!))
+                .Select(x => x.HeirSsn)
                 .Distinct()
-                .ToList();
+                .ToArray();
 
-            if (otherHeirsWithProbateRolesThatHaveGivenProxyRoleToHeir.Count == otherHeirsWithProbateRoles.Count)
+            if (otherHeirsWithProbateRolesThatHaveGivenProxyRoleToHeir.Length == otherHeirsWithProbateRoles.Length)
             {
                 eligibleCollectiveProxyRecipients.Add(heirWithProbateRole);
             }
