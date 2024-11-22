@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using oed_authz.Settings;
 
@@ -15,6 +16,12 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    public static IHealthChecksBuilder AddOedAuthzDatabaseCheck(this IHealthChecksBuilder healthChecks,
+        string? name = null, HealthStatus? failureStatus = null, IEnumerable<string>? tags = null)
+    {
+        return healthChecks.AddDbContextCheck<OedAuthzDbContext>(name, failureStatus, tags);
     }
 }
 

@@ -1,7 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -21,9 +20,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<Secrets>(builder.Configuration.GetSection(Constants.ConfigurationSectionSecrets));
 builder.Services.Configure<GeneralSettings>(builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings));
 
-//TODO: Legg til flere relevante sjekker
 builder.Services.AddHealthChecks()
-    .AddCheck<HealthCheck>("health_check");
+    .AddCheck<InformationCheck>(nameof(InformationCheck))
+    .AddOedAuthzDatabaseCheck();
 
 builder.Services.AddScoped<IAltinnEventHandlerService, AltinnEventHandlerService>();
 builder.Services.AddScoped<IPolicyInformationPointService, PipService>();
@@ -160,13 +159,23 @@ var app = builder.Build();
 app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
+
+
+// Liveness probe
 app.MapHealthChecks("/", new HealthCheckOptions
 {
-    ResponseWriter = JsonHealthResponseWriter.WriteResponseAsync
+    Predicate = _ => false, // No custom "deep" checks here
 });
 
 // Helsesjekk på /health
+// Liveness
 app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => false, // No custom "deep" checks here
+});
+
+// Details
+app.MapHealthChecks("/health/details", new HealthCheckOptions
 {
     ResponseWriter = JsonHealthResponseWriter.WriteResponseAsync
 });
