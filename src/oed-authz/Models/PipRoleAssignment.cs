@@ -12,4 +12,5 @@ public class PipRoleAssignment
     public string RecipientSsn { get; init; } = string.Empty;
 
     public DateTimeOffset Created { get; set; }
+    public bool IsRestricted { get; set; }
 }

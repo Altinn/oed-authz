@@ -123,7 +123,8 @@ public class AuthorizationController : Controller
                     EstateSsn = pipRoleAssignment.EstateSsn,
                     RecipientSsn = pipRoleAssignment.RecipientSsn,
                     Role = pipRoleAssignment.RoleCode,
-                    Created = pipRoleAssignment.Created
+                    Created = pipRoleAssignment.Created,
+                    IsRestricted = pipRoleAssignment.IsRestricted
                 }).ToList();
 
         var rolesSearchResponseDto = new RolesSearchResponseDto()

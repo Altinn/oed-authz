@@ -139,4 +139,42 @@ public class PipServiceTests
                 e.ParamName == "pipRequest");
     }
 
+    [Fact]
+    public async Task HandlePipRequest_When_ProbateIsIssued_And_SomeHeirsDoNotHaveProbateRole_Should_ReturnResultWithIsRestricted()
+    {
+        // Arrange
+        A.CallTo(() => _fakeRepository.GetRoleAssignmentsForEstate(A<string>._))
+            .ReturnsLazily((call) =>
+            {
+                var estateSsn = call.Arguments.Get<string>("estateSsn")!;
+                var factory = new RoleAssignmentFactory(estateSsn);
+
+                return Task.FromResult(new List<RoleAssignment>
+                {
+                    factory.ProbateRole("12345678900"),
+                    factory.ProbateRole("12345678901"),
+                    factory.ProbateRole("12345678902"),
+                    factory.FormuesfulmaktRole("12345678903"),
+                    factory.IndividualProxyRole("12345678902", "12345678900"),
+                    factory.CollectiveProxyRole("98765432100"),
+                });
+            });
+
+        var pipRequest = new PipRequest
+        {
+            EstateSsn = "11111111111"!
+        };
+
+        var sut = new PipService(_fakeRepository);
+
+        // Act
+        var result = await sut.HandlePipRequest(pipRequest);
+
+        // Assert
+        result.RoleAssignments.Should().HaveCount(6);
+        result.RoleAssignments
+            .Should().ContainSingle(ra => ra.IsRestricted == true)
+            .Which.RecipientSsn.Should().Be("12345678903");
+    }
+
 }
