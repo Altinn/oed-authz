@@ -174,6 +174,11 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     Predicate = _ => false, // No custom "deep" checks here
 });
 
+app.MapHealthChecks("/health/auth", new HealthCheckOptions
+{
+    Predicate = _ => false, // No custom "deep" checks here
+}).RequireAuthorization(Constants.AuthorizationPolicyExternal);
+
 // Details
 app.MapHealthChecks("/health/details", new HealthCheckOptions
 {
