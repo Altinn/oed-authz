@@ -5,48 +5,32 @@ using oed_authz.Models.Dto;
 using oed_authz.Settings;
 
 namespace oed_authz.Services;
-public class AltinnEventHandlerService : IAltinnEventHandlerService
+
+public class AltinnEventHandlerService(
+    IRoleAssignmentsRepository oedRoleRepositoryService,
+    IProxyManagementService proxyManagementService,
+    ILogger<AltinnEventHandlerService> logger)
+    : IAltinnEventHandlerService
 {
-    private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
-    private readonly IProxyManagementService _proxyManagementService;
-    private readonly ILogger<AltinnEventHandlerService> _logger;
-
-    public AltinnEventHandlerService(
-        IRoleAssignmentsRepository oedRoleRepositoryService,
-        IProxyManagementService proxyManagementService,
-        ILogger<AltinnEventHandlerService> logger)
+    public Task HandleEvent(CloudEvent cloudEvent)
     {
-        _oedRoleRepositoryService = oedRoleRepositoryService;
-        _proxyManagementService = proxyManagementService;
-        _logger = logger;
-    }
-
-    public async Task HandleEvent(CloudEvent cloudEvent)
-    {
-        switch (cloudEvent.Type)
+        return cloudEvent.Type switch
         {
-            case "no.altinn.events.digitalt-dodsbo.v1.case-status-updated":
-                await HandleEstateInstanceCreatedOrUpdated(cloudEvent);
-                break;
-            case "no.altinn.events.digitalt-dodsbo.v1.heir-roles-updated":
-                await HandleEstateInstanceCreatedOrUpdated(cloudEvent);
-                break;
-            case "platform.events.validatesubscription":
-                return;
-            default:
-                throw new ArgumentException("Unknown event type");
-        }
+            Events.Oed.CaseStatusUpdateValidated => HandleEstateInstanceCreatedOrUpdated(cloudEvent),
+            Events.Platform.ValidateSubscription => Task.CompletedTask,
+            _ => throw new ArgumentException("Unknown event type")
+        };
     }
 
     private async Task HandleEstateInstanceCreatedOrUpdated(CloudEvent daEvent)
     {
         if (daEvent.Data == null)
         {
-            _logger.LogError("Empty data in event: {CloudEvent}", JsonSerializer.Serialize(daEvent));
+            logger.LogError("Empty data in event: {CloudEvent}", JsonSerializer.Serialize(daEvent));
             throw new ArgumentNullException(nameof(daEvent.Data));
         }
 
-        _logger.LogInformation("Handling event {Id}: {CloudEvent}", daEvent.Id, JsonSerializer.Serialize(daEvent));
+        logger.LogInformation("Handling event {Id}: {CloudEvent}", daEvent.Id, JsonSerializer.Serialize(daEvent));
 
         var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
         var estateSsn = Utils.GetEstateSsnFromCloudEvent(daEvent);
@@ -59,7 +43,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
         {
             await UpdateCourtAssignedRoleAssignments(estateSsn, eventRoleAssignments, daEvent.Id, daEvent.Time);
             // Handle collective proxy roles
-            await _proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
+            await proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
         }
     }
 
@@ -70,7 +54,7 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
         DateTimeOffset eventTime)
     {
         // Get all current court assigned roles from this estate
-        var currentCourtAssignedRoleAssignments = (await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn))
+        var currentCourtAssignedRoleAssignments = (await oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn))
             .Where(x => x.RoleCode.StartsWith(Constants.CourtRoleCodePrefix))
             .ToList();
         
@@ -129,31 +113,44 @@ public class AltinnEventHandlerService : IAltinnEventHandlerService
             }
         }
 
-        _logger.LogInformation("Handling event {Id}: {AssignmentsToAdd} assignments to add and {AssignmentsToRemove} assignments to remove",
+        logger.LogInformation("Handling event {Id}: {AssignmentsToAdd} assignments to add and {AssignmentsToRemove} assignments to remove",
             eventId, assignmentsToAdd.Count, assignmentsToRemove.Count);
 
         foreach (var roleAssignment in assignmentsToAdd)
         {
-            await _oedRoleRepositoryService.AddRoleAssignment(roleAssignment);
+            await oedRoleRepositoryService.AddRoleAssignment(roleAssignment);
         }
 
         foreach (var roleAssignment in assignmentsToRemove)
         {
-            await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
+            await oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
         }
     }
 
     private async Task RemoveAllRoleAssignmentsForEstate(string estateSsn, string eventId)
     {
         // Get all current roles from this estate
-        var assignmentsToRemove = await _oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn);
+        var assignmentsToRemove = await oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn);
 
-        _logger.LogInformation("Handling event {Id}: Removing all assignments ({AssignmentsToRemove})",
+        logger.LogInformation("Handling event {Id}: Removing all assignments ({AssignmentsToRemove})",
             eventId, assignmentsToRemove.Count);
 
         foreach (var roleAssignment in assignmentsToRemove)
         {
-            await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
+            await oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
         }
+    }
+}
+
+public static class Events
+{
+    public static class Oed
+    {
+        public const string CaseStatusUpdateValidated = "no.altinn.events.digitalt-dodsbo.v1.case-status-update-validated";
+    }
+
+    public static class Platform
+    {
+        public const string ValidateSubscription = "platform.events.validatesubscription";
     }
 }
