@@ -19,12 +19,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
-      
+      uses: actions/checkout@v4
+
     - name: GitHub metadata
       run: |
           printf "%s on %s by %s\n" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" "$GITHUB_ACTOR"
-          
+
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -40,14 +40,14 @@ jobs:
       run: dotnet test -c Release --no-build --verbosity normal
 
     - name: Publish
-      run: dotnet publish ./src/oed-authz/oed-authz.csproj --no-build -c Release -o ./publish 
+      run: dotnet publish ./src/oed-authz/oed-authz.csproj --no-build -c Release -o ./publish
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: published-artifacts
         path: ./publish/
-        
+
   deploy-to-test:
     name: Deploy to Test Environment
     needs: build
@@ -57,7 +57,7 @@ jobs:
 
     steps:
     - name: Download Build Artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: published-artifacts
         path: ./publish/
