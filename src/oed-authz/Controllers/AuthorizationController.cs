@@ -24,11 +24,13 @@ public class AuthorizationController : Controller
     [HttpPost]
     [Route("roles/search")]
     [Authorize(Policy = Constants.AuthorizationPolicyExternal)]
-    public async Task<ActionResult<RolesSearchResponseDto>> GetRoles([FromBody] RolesSearchRequestDto rolesSearchRequestDto)
+    public async Task<ActionResult<RolesSearchResponseDto>> GetRoles(
+        [FromBody] RolesSearchRequestDto rolesSearchRequestDto,
+        [FromQuery] bool unfiltered = false)
     {
         try
         {
-            return Ok(await HandleRequest(rolesSearchRequestDto));
+            return Ok(await HandleRequest(rolesSearchRequestDto, unfiltered));
         }
         catch (ArgumentException ex)
         {
@@ -106,7 +108,7 @@ public class AuthorizationController : Controller
         }
     }
 
-    private async Task<RolesSearchResponseDto> HandleRequest(RolesSearchRequestDto rolesSearchRequestDto)
+    private async Task<RolesSearchResponseDto> HandleRequest(RolesSearchRequestDto rolesSearchRequestDto, bool unfiltered)
     {
         var pipRequest = new PipRequest
         {
@@ -119,6 +121,7 @@ public class AuthorizationController : Controller
         var roleAssignmentDtos =
             pipResponse.RoleAssignments
                 .Where(pipRoleAssignment => 
+                    unfiltered || 
                     pipRoleAssignment.RoleCode != Constants.SuperadminRoleCode) // Removing any superadmin roles
                 .Select(pipRoleAssignment =>
                 new RoleAssignmentDto()
