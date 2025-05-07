@@ -117,7 +117,10 @@ public class AuthorizationController : Controller
         var pipResponse = await _pipService.HandlePipRequest(pipRequest);
 
         var roleAssignmentDtos =
-            pipResponse.RoleAssignments.Select(pipRoleAssignment =>
+            pipResponse.RoleAssignments
+                .Where(pipRoleAssignment => 
+                    pipRoleAssignment.RoleCode != Constants.SuperadminRoleCode) // Removing any superadmin roles
+                .Select(pipRoleAssignment =>
                 new RoleAssignmentDto()
                 {
                     EstateSsn = pipRoleAssignment.EstateSsn,
