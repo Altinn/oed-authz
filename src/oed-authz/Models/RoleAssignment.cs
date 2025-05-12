@@ -8,4 +8,5 @@ public class RoleAssignment
     public string? HeirSsn { get; set; }
     public string RecipientSsn { get; set; } = string.Empty;
     public DateTimeOffset Created { get; set; }
+    public string? Justification { get; set; }
 }

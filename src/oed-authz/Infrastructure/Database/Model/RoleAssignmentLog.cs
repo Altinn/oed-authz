@@ -9,4 +9,5 @@ public class RoleAssignmentLog
     public string RecipientSsn { get; set; } = string.Empty;
     public string Action { get; set; } = string.Empty;
     public DateTimeOffset Timestamp { get; set; }
+    public string? Justification { get; set; }
 }

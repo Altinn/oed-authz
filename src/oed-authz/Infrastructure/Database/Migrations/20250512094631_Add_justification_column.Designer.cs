@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using oed_authz.Infrastructure.Database;
@@ -11,9 +12,11 @@ using oed_authz.Infrastructure.Database;
 namespace oed_authz.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(OedAuthzDbContext))]
-    partial class OedAuthzDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250512094631_Add_justification_column")]
+    partial class Add_justification_column
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

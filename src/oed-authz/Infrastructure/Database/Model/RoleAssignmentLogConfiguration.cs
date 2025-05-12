@@ -46,6 +46,11 @@ namespace oed_authz.Infrastructure.Database.Model
             builder.Property(e => e.Action)
                 .HasColumnName("action")
                 .HasColumnType("oedauthz.roleassignments_action");
+
+            builder.Property(e => e.Justification)
+                .IsRequired(false)
+                .HasMaxLength(255)
+                .HasColumnName("justification");
         }
     }
 }
