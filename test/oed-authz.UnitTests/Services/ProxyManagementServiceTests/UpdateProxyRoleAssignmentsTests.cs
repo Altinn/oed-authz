@@ -231,8 +231,10 @@ public class UpdateProxyRoleAssignmentsTests
         // Assert
         A.CallTo(() => _fakeRoleAssignmentRepository.RemoveRoleAssignment(
                 A<RoleAssignment>.That.Matches(ra =>
-                    ra.RecipientSsn == "12345678901"
-                    && ra.HeirSsn == "12345678903")))
+                    ra.EstateSsn == "11111111111" &&
+                    ra.RecipientSsn == "12345678901" &&
+                    ra.RoleCode == Constants.IndividualProxyRoleCode &&
+                    ra.HeirSsn == "12345678903")))
             .MustHaveHappened(1, Times.Exactly);
 
         A.CallTo(() => _fakeRoleAssignmentRepository.AddRoleAssignment(A<RoleAssignment>._)).MustNotHaveHappened();

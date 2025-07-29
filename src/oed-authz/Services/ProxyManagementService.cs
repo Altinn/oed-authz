@@ -81,6 +81,7 @@ public class ProxyManagementService : IProxyManagementService
                 {
                     EstateSsn = estateSsn,
                     HeirSsn = invalidIndividualProxyAssignment.HeirSsn,
+                    RoleCode = Constants.IndividualProxyRoleCode,
                     RecipientSsn = invalidIndividualProxyAssignment.RecipientSsn,
                 });
         }

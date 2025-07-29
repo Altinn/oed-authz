@@ -18,6 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "oed-authz.IntegrationTests", "test\oed-authz.IntegrationTests\oed-authz.IntegrationTests.csproj", "{28094007-CA1A-4F36-B7A7-3ECFA345E077}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{7104D20E-EBD1-47CE-A14A-37B0DC6646F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7104D20E-EBD1-47CE-A14A-37B0DC6646F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7104D20E-EBD1-47CE-A14A-37B0DC6646F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28094007-CA1A-4F36-B7A7-3ECFA345E077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28094007-CA1A-4F36-B7A7-3ECFA345E077}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28094007-CA1A-4F36-B7A7-3ECFA345E077}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28094007-CA1A-4F36-B7A7-3ECFA345E077}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -39,6 +45,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{4C069D4E-E4EC-4D6E-AE29-4DCDD9412425} = {F678060E-4033-4327-AA74-5F1B5A12EB56}
 		{7104D20E-EBD1-47CE-A14A-37B0DC6646F8} = {042022CA-7324-471A-A7E0-084321AD6FA6}
+		{28094007-CA1A-4F36-B7A7-3ECFA345E077} = {042022CA-7324-471A-A7E0-084321AD6FA6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9551BFCB-9EF4-483D-A05B-ECA5972E5209}
