@@ -30,6 +30,7 @@ builder.Services.AddScoped<IProxyManagementService, ProxyManagementService>();
 builder.Services.AddScoped<IAuthorizationHandler, QueryParamRequirementHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ScopeRequirementHandler>();
 builder.Services.AddScoped<IRoleAssignmentsRepository, RoleAssignmentsRepository>();
+builder.Services.AddScoped<IEventCursorRepository, EventCursorRepository>();
 
 builder.Services.AddOedAuthzDatabase(builder.Configuration);
 
