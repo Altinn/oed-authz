@@ -1,4 +1,6 @@
 ﻿using System.Text.Json;
+using oed_authz.Infrastructure.Database;
+using oed_authz.Infrastructure.Database.Model;
 using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Models.Dto;
@@ -7,6 +9,8 @@ using oed_authz.Settings;
 namespace oed_authz.Services;
 
 public class AltinnEventHandlerService(
+    OedAuthzDbContext dbContext,
+    IEventCursorRepository eventCursorRepository,
     IRoleAssignmentsRepository oedRoleRepositoryService,
     IProxyManagementService proxyManagementService,
     ILogger<AltinnEventHandlerService> logger)
@@ -24,6 +28,20 @@ public class AltinnEventHandlerService(
 
     private async Task HandleEstateInstanceCreatedOrUpdated(CloudEvent daEvent)
     {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+        var eventCursor = await GetOrCreateEventCursorForUpdate(daEvent);
+        
+        // Discard event if out of order
+        if (EventIsOutOfOrder(eventCursor, daEvent))
+        {
+            logger.LogInformation(
+                "Discarding event {Id} for estate {Estate} - event is out of order",
+                daEvent.Id, daEvent.Subject);
+
+            return;
+        }
+
         if (daEvent.Data == null)
         {
             logger.LogError("Empty data in event: {CloudEvent}", JsonSerializer.Serialize(daEvent));
@@ -45,6 +63,10 @@ public class AltinnEventHandlerService(
             // Handle collective proxy roles
             await proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
         }
+
+        eventCursor.LastTimestampProcessed = daEvent.Time.ToUniversalTime();
+        await dbContext.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     private async Task UpdateCourtAssignedRoleAssignments(
@@ -67,13 +89,6 @@ public class AltinnEventHandlerService(
                 throw new ArgumentException(nameof(updatedRoleAssignment.Nin));
             }
 
-            // Check if we have any current role assigments that are newer than this. If so, this means we're handling
-            // an out-of-order and outdated event so we just bail.
-            if (currentCourtAssignedRoleAssignments.Any(x => x.Created >= eventTime))
-            {
-                return;
-            }
-
             // Check that all role codes are within the correct namespace
             if (!updatedRoleAssignment.Role.StartsWith(Constants.CourtRoleCodePrefix))
             {
@@ -90,7 +105,7 @@ public class AltinnEventHandlerService(
                     EstateSsn = estateSsn,
                     RecipientSsn = updatedRoleAssignment.Nin,
                     RoleCode = updatedRoleAssignment.Role,
-                    Created = eventTime
+                    Created = eventTime.ToUniversalTime()
                 });
             }
         }
@@ -140,6 +155,32 @@ public class AltinnEventHandlerService(
             await oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
         }
     }
+
+    private static bool EventIsOutOfOrder(EventCursor cursor, CloudEvent cloudEvent)
+    {
+        return cursor.LastTimestampProcessed != default
+               && cloudEvent.Time <= cursor.LastTimestampProcessed;
+    }
+
+    private async Task<EventCursor> GetOrCreateEventCursorForUpdate(CloudEvent daEvent)
+    {
+        var estateSsn = Utils.GetEstateSsnFromCloudEvent(daEvent);
+        var eventCursor = await eventCursorRepository.GetEventCursorForUpdate(estateSsn, daEvent.Type);
+
+        if (eventCursor is not null)
+            return eventCursor;
+
+        eventCursor = new EventCursor
+        {
+            EstateSsn = estateSsn,
+            EventType = daEvent.Type,
+            LastTimestampProcessed = default
+        };
+
+        await eventCursorRepository.AddEventCursor(eventCursor);
+        return eventCursor;
+    }
+
 }
 
 public static class Events
