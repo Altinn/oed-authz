@@ -36,8 +36,10 @@ public class AltinnEventHandlerService(
         if (EventIsOutOfOrder(eventCursor, daEvent))
         {
             logger.LogInformation(
-                "Discarding event {Id} for estate {Estate} - event is out of order",
-                daEvent.Id, daEvent.Subject);
+                "Discarding event {Id} of type {EventType} for estate {Estate} - event is out of order",
+                daEvent.Id, 
+                daEvent.Type,
+                daEvent.Subject);
 
             return;
         }
