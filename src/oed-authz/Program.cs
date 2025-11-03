@@ -1,9 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Reflection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using oed_authz.Authorization;
 using oed_authz.HealthChecks;
 using oed_authz.Infrastructure.Database;
@@ -70,7 +74,8 @@ builder.Services.AddLogging(logging =>
 builder.Services.AddProblemDetails();
 builder.Services.AddAuthentication(options =>
     {
-        options.DefaultScheme = Constants.MaskinportenAuthentication;
+        options.DefaultScheme = Constants.MaskinportenOrAltinnAuthentication;
+        options.DefaultChallengeScheme = Constants.MaskinportenOrAltinnAuthentication;
     })
     // Add support for the Oauth2 with Maskinporten as issuer
     .AddJwtBearer(Constants.MaskinportenAuthentication, options =>
@@ -104,6 +109,39 @@ builder.Services.AddAuthentication(options =>
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+    })
+    .AddPolicyScheme(Constants.MaskinportenOrAltinnAuthentication, Constants.MaskinportenOrAltinnAuthentication, options =>
+    {
+        options.ForwardDefaultSelector = context =>
+        {
+            var authHeader = context.Request.Headers[HeaderNames.Authorization].ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var jwtHandler = new JwtSecurityTokenHandler();
+
+                var mpIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
+                    nameof(GeneralSettings.MaskinportenOauth2WellKnownEndpoint)]!;
+                var mpAuxillaryIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
+                    nameof(GeneralSettings.MaskinportenAuxillaryOauth2WellKnownEndpoint)]!;
+
+                var issuer = jwtHandler.CanReadToken(token) ? jwtHandler.ReadJwtToken(token).Issuer : null;
+                if (issuer is not null)
+                {
+                    var issuerUri = new Uri(issuer);
+                    if (mpAuxillaryIssuerSetting.Contains(issuerUri.Host))
+                    {
+                        return Constants.MaskinportenAuxillaryAuthentication;
+                    }
+                    else if (mpIssuerSetting.Contains(issuerUri.Host))
+                    {
+                        return Constants.MaskinportenAuthentication;
+                    }
+                }
+            }
+
+            return Constants.MaskinportenAuxillaryAuthentication;
+        };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -113,7 +151,6 @@ builder.Services.AddAuthorization(options =>
     {
         configurePolicy
             .RequireAuthenticatedUser()
-            .AddAuthenticationSchemes(Constants.MaskinportenAuthentication, Constants.MaskinportenAuxillaryAuthentication)
             .AddRequirements(new ScopeRequirement(Constants.ScopeInternal))
             .Build();
     });
@@ -123,7 +160,6 @@ builder.Services.AddAuthorization(options =>
     {
         configurePolicy
             .RequireAuthenticatedUser()
-            .AddAuthenticationSchemes(Constants.MaskinportenAuthentication, Constants.MaskinportenAuxillaryAuthentication)
             .AddRequirements(new ScopeRequirement(Constants.ScopeExternal))
             .Build();
     });
@@ -142,7 +178,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAzurePortal", builder => 
+    options.AddPolicy("AllowAzurePortal", builder =>
         builder
             .WithOrigins("https://portal.azure.com")
             .AllowAnyMethod()

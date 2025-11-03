@@ -7,6 +7,7 @@ public static class Constants
 
     public const string MaskinportenAuthentication = "Maskinporten";
     public const string MaskinportenAuxillaryAuthentication = "MaskinportenAuxillary";
+    public const string MaskinportenOrAltinnAuthentication = "MP_OR_ALTINN";
 
     public const string AuthorizationPolicyInternal = "Internal";
     public const string AuthorizationPolicyForEvents = "Events";
