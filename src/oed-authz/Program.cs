@@ -1,13 +1,13 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using oed_authz.Authorization;
 using oed_authz.HealthChecks;
 using oed_authz.Infrastructure.Database;
+using oed_authz.Infrastructure.Middleware;
 using oed_authz.Interfaces;
 using oed_authz.Repositories;
 using oed_authz.Services;
@@ -49,7 +49,6 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString))
     builder.Services.AddLogging(logging =>
     {
         logging.AddApplicationInsights();
-        logging.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Information); // Set the minimum log level to Information
     });
 }
 else
@@ -66,7 +65,6 @@ builder.Services.AddApplicationInsightsTelemetry(options =>
 builder.Services.AddLogging(logging =>
 {
     logging.AddApplicationInsights();
-    logging.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Information); // Set the minimum log level to Information
 });
 
 builder.Services.AddProblemDetails();
@@ -194,6 +192,10 @@ app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
 
+if (!app.Environment.IsProduction())
+{
+    app.UseLogContextMiddleware();
+}
 
 // Liveness probe
 app.MapHealthChecks("/", new HealthCheckOptions
