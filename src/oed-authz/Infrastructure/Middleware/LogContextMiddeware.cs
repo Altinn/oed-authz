@@ -25,6 +25,7 @@ public class LogContextMiddeware(
 
         using (logger.BeginScope(state))
         {
+            logger.LogInformation("Hello from LogContextMiddleware!");
             await next(context);
         }
     }
