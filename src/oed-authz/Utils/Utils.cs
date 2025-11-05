@@ -1,7 +1,7 @@
 ﻿using oed_authz.Models;
 
-namespace oed_authz;
-public static class Utils
+namespace oed_authz.Utils;
+public static class SsnUtils
 {
     public static bool IsValidSsn(string estateSsnOnly)
     {
@@ -19,7 +19,7 @@ public static class Utils
         {
             return daEvent.Subject;
         }
-        
+
         var subject = daEvent.Subject.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (subject is not ["person", _] || !IsValidSsn(subject[1]))
         {

@@ -5,6 +5,7 @@ using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Models.Dto;
 using oed_authz.Settings;
+using oed_authz.Utils;
 
 namespace oed_authz.Services;
 
@@ -53,7 +54,7 @@ public class AltinnEventHandlerService(
         logger.LogInformation("Handling event {Id}: {CloudEvent}", daEvent.Id, JsonSerializer.Serialize(daEvent));
 
         var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
-        var estateSsn = Utils.GetEstateSsnFromCloudEvent(daEvent);
+        var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
         if (eventRoleAssignments.CaseStatus == CaseStatus.FEILFORT)
         {
@@ -86,7 +87,7 @@ public class AltinnEventHandlerService(
         var assignmentsToAdd = new List<RoleAssignment>();
         foreach (var updatedRoleAssignment in eventRoleAssignments.HeirRoles)
         {
-            if (!Utils.IsValidSsn(updatedRoleAssignment.Nin))
+            if (!SsnUtils.IsValidSsn(updatedRoleAssignment.Nin))
             {
                 throw new ArgumentException(nameof(updatedRoleAssignment.Nin));
             }
@@ -166,7 +167,7 @@ public class AltinnEventHandlerService(
 
     private async Task<EventCursor> GetOrCreateEventCursorForUpdate(CloudEvent daEvent)
     {
-        var estateSsn = Utils.GetEstateSsnFromCloudEvent(daEvent);
+        var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
         var eventCursor = await eventCursorRepository.GetEventCursorForUpdate(estateSsn, daEvent.Type);
 
         if (eventCursor is not null)

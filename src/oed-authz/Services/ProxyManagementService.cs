@@ -2,6 +2,7 @@
 using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Settings;
+using oed_authz.Utils;
 
 namespace oed_authz.Services;
 
@@ -146,17 +147,17 @@ public class ProxyManagementService : IProxyManagementService
             throw new ArgumentException("Can only assign " + Constants.IndividualProxyRoleCode);
         }
 
-        if (!Utils.IsValidSsn(proxyManagementRequest.EstateSsn))
+        if (!SsnUtils.IsValidSsn(proxyManagementRequest.EstateSsn))
         {
             throw new ArgumentException(nameof(proxyManagementRequest.ProxyRoleAssignment.RecipientSsn));
         }
 
-        if (!Utils.IsValidSsn(proxyManagementRequest.ProxyRoleAssignment.RecipientSsn))
+        if (!SsnUtils.IsValidSsn(proxyManagementRequest.ProxyRoleAssignment.RecipientSsn))
         {
             throw new ArgumentException(nameof(proxyManagementRequest.ProxyRoleAssignment.RecipientSsn));
         }
 
-        if (!Utils.IsValidSsn(proxyManagementRequest.ProxyRoleAssignment.HeirSsn))
+        if (!SsnUtils.IsValidSsn(proxyManagementRequest.ProxyRoleAssignment.HeirSsn))
         {
             throw new ArgumentException(nameof(proxyManagementRequest.ProxyRoleAssignment.HeirSsn));
         }

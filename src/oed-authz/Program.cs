@@ -1,7 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Reflection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging.ApplicationInsights;
@@ -15,6 +12,7 @@ using oed_authz.Interfaces;
 using oed_authz.Repositories;
 using oed_authz.Services;
 using oed_authz.Settings;
+using oed_authz.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -117,17 +115,16 @@ builder.Services.AddAuthentication(options =>
             var authHeader = context.Request.Headers[HeaderNames.Authorization].ToString();
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
-                var token = authHeader.Substring("Bearer ".Length).Trim();
-                var jwtHandler = new JwtSecurityTokenHandler();
+                var token = authHeader["Bearer ".Length..].Trim();
+                var issuer = JwtReader.GetIssuerFromJwt(token);
 
-                var mpIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
-                    nameof(GeneralSettings.MaskinportenOauth2WellKnownEndpoint)]!;
-                var mpAuxillaryIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
-                    nameof(GeneralSettings.MaskinportenAuxillaryOauth2WellKnownEndpoint)]!;
-
-                var issuer = jwtHandler.CanReadToken(token) ? jwtHandler.ReadJwtToken(token).Issuer : null;
                 if (issuer is not null)
                 {
+                    var mpIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
+                    nameof(GeneralSettings.MaskinportenOauth2WellKnownEndpoint)]!;
+                    var mpAuxillaryIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
+                        nameof(GeneralSettings.MaskinportenAuxillaryOauth2WellKnownEndpoint)]!;
+
                     var issuerUri = new Uri(issuer);
                     if (mpAuxillaryIssuerSetting.Contains(issuerUri.Host))
                     {
