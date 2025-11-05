@@ -193,7 +193,7 @@ app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
 
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsProduction())
 {
     app.UseLogContextMiddleware();
 }
