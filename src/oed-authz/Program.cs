@@ -192,8 +192,6 @@ app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
 
-app.UseLogContextMiddleware();
-
 // Liveness probe
 app.MapHealthChecks("/", new HealthCheckOptions
 {
@@ -226,6 +224,7 @@ app.UseExceptionHandler(app.Environment.IsDevelopment() ? "/error-development" :
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseLogContextMiddleware();
 app.MapControllers();
 
 // Running database migrations on startup
