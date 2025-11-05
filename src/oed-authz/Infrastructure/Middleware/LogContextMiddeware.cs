@@ -10,11 +10,11 @@ public class LogContextMiddeware(
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.User.Identity?.IsAuthenticated is not true)
-        {
-            await next(context);
-            return;
-        }
+        //if (context.User.Identity?.IsAuthenticated is not true)
+        //{
+        //    await next(context);
+        //    return;
+        //}
 
         var consumer = context.User.Claims.FirstOrDefault(c => c.Type == ConsumerClaimType)?.Value;
 
