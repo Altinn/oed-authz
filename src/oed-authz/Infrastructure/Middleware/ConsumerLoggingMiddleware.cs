@@ -1,23 +1,14 @@
 ﻿namespace oed_authz.Infrastructure.Middleware;
 
-public class LogContextMiddeware(
+public class ConsumerLoggingMiddleware(
     RequestDelegate next, 
-    ILogger<LogContextMiddeware> logger)
+    ILogger<ConsumerLoggingMiddleware> logger)
 {
     private const string ConsumerClaimType = "consumer";
 
-
-
     public async Task InvokeAsync(HttpContext context)
     {
-        //if (context.User.Identity?.IsAuthenticated is not true)
-        //{
-        //    await next(context);
-        //    return;
-        //}
-
         var consumer = context.User.Claims.FirstOrDefault(c => c.Type == ConsumerClaimType)?.Value;
-
         var state = new Dictionary<string, object>
         {
             { "Consumer", consumer ?? "Unknown" }
@@ -25,7 +16,6 @@ public class LogContextMiddeware(
 
         using (logger.BeginScope(state))
         {
-            logger.LogInformation("Hello from LogContextMiddleware!");
             await next(context);
         }
     }
@@ -33,9 +23,9 @@ public class LogContextMiddeware(
 
 public static class ApplicationBuilderExtensions
 {
-    public static IApplicationBuilder UseLogContextMiddleware(this IApplicationBuilder app)
+    public static IApplicationBuilder UseConsumerLogging(this IApplicationBuilder app)
     {
-        app.UseMiddleware<LogContextMiddeware>();
+        app.UseMiddleware<ConsumerLoggingMiddleware>();
         return app;
     }
 }
