@@ -1,10 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Reflection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
@@ -51,7 +48,6 @@ if (!string.IsNullOrEmpty(appInsightsConnectionString))
     builder.Services.AddLogging(logging =>
     {
         logging.AddApplicationInsights();
-        logging.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Information); // Set the minimum log level to Information
     });
 }
 else
@@ -68,7 +64,6 @@ builder.Services.AddApplicationInsightsTelemetry(options =>
 builder.Services.AddLogging(logging =>
 {
     logging.AddApplicationInsights();
-    logging.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Information); // Set the minimum log level to Information
 });
 
 builder.Services.AddProblemDetails();
