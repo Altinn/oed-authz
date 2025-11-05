@@ -8,6 +8,7 @@ using Microsoft.Net.Http.Headers;
 using oed_authz.Authorization;
 using oed_authz.HealthChecks;
 using oed_authz.Infrastructure.Database;
+using oed_authz.Infrastructure.Middleware;
 using oed_authz.Interfaces;
 using oed_authz.Repositories;
 using oed_authz.Services;
@@ -192,6 +193,10 @@ app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseLogContextMiddleware();
+}
 
 // Liveness probe
 app.MapHealthChecks("/", new HealthCheckOptions
