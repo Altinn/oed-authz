@@ -193,10 +193,7 @@ app.UseCors("AllowAzurePortal");
 
 //TODO: Fjern denne når platform har endret TF
 
-if (!app.Environment.IsProduction())
-{
-    app.UseLogContextMiddleware();
-}
+app.UseLogContextMiddleware();
 
 // Liveness probe
 app.MapHealthChecks("/", new HealthCheckOptions
