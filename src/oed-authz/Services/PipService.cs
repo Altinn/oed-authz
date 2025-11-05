@@ -1,6 +1,7 @@
 ﻿using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Settings;
+using oed_authz.Utils;
 
 namespace oed_authz.Services;
 public class PipService(IRoleAssignmentsRepository repository) 
@@ -9,12 +10,12 @@ public class PipService(IRoleAssignmentsRepository repository)
     public async Task<PipResponse> HandlePipRequest(PipRequest pipRequest)
     {
         // EstateSsn is required for now
-        if (string.IsNullOrWhiteSpace(pipRequest.EstateSsn) || !Utils.IsValidSsn(pipRequest.EstateSsn))
+        if (string.IsNullOrWhiteSpace(pipRequest.EstateSsn) || !SsnUtils.IsValidSsn(pipRequest.EstateSsn))
         {
             throw new ArgumentException($"Invalid {nameof(pipRequest.EstateSsn)}", nameof(pipRequest));
         }
 
-        if (pipRequest.RecipientSsn is not null && !Utils.IsValidSsn(pipRequest.RecipientSsn))
+        if (pipRequest.RecipientSsn is not null && !SsnUtils.IsValidSsn(pipRequest.RecipientSsn))
         {
             throw new ArgumentException($"Invalid {nameof(pipRequest.RecipientSsn)}", nameof(pipRequest));
         }
