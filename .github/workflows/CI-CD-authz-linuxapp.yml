@@ -65,7 +65,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: "${{ env.TEST_APP_SERVICE_NAME}}"
-          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.PUBLISH_PROFILE_LINUX }}
           package: ./publish/
 
   # deploy-to-prod:
@@ -91,5 +91,5 @@ jobs:
   #       uses: azure/webapps-deploy@v3
   #       with:
   #         app-name: "${{ env.PROD_APP_SERVICE_NAME }}"
-  #         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+  #         publish-profile: ${{ secrets.PUBLISH_PROFILE_LINUX }}
   #         package: ./publish/
