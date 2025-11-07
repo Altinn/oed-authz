@@ -1,0 +1,95 @@
+name: CI/CD authz-app linux
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  workflow_dispatch:
+env:
+  DOTNET_VERSION: "8.x" # Global environment variables
+  TEST_APP_SERVICE_NAME: "oed-test-authz-app-74193"
+  PROD_APP_SERVICE_NAME: "oed-authz-app-74193"
+  PROD_RESOURCE_GROUP_NAME: "altinn-digdir-oed-rg"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: GitHub metadata
+        run: |
+          printf "%s on %s by %s\n" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" "$GITHUB_ACTOR"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release
+
+      - name: Run Tests
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      - name: Publish
+        run: dotnet publish ./src/oed-authz/oed-authz.csproj --no-build -c Release -o ./publish
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-artifacts
+          path: ./publish/
+
+  deploy-to-test:
+    runs-on: ubuntu-latest
+    name: Deploy to Test Environment
+    needs: build
+    environment:
+      name: test
+
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: published-artifacts
+          path: ./publish/
+
+      - name: Deploy to Azure App Service (Test)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "${{ env.TEST_APP_SERVICE_NAME}}"
+          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+          package: ./publish/
+
+  # deploy-to-prod:
+  #   name: Deploy to Production Environment
+  #   needs: deploy-to-test
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: production
+
+  #   steps:
+  #     - name: Await Manual Approval
+  #       if: ${{ github.ref == 'refs/heads/main' }}
+  #       run: |
+  #         echo "Waiting for manual approval"
+  #         echo "::pause::"
+  #     - name: Download Build Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: published-artifacts
+  #         path: ./publish/
+
+  #     - name: Deploy to Azure App Service Staging Slot
+  #       uses: azure/webapps-deploy@v3
+  #       with:
+  #         app-name: "${{ env.PROD_APP_SERVICE_NAME }}"
+  #         publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+  #         package: ./publish/
