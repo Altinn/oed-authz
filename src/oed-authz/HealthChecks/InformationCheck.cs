@@ -9,6 +9,7 @@ namespace oed_authz.HealthChecks
         {
             var data = new Dictionary<string, object>
             {
+                { "os", Environment.OSVersion },
                 { ".net version", Environment.Version.ToString() }
             };
 
