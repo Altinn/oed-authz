@@ -224,7 +224,9 @@ app.UseExceptionHandler(app.Environment.IsDevelopment() ? "/error-development" :
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseLogContextMiddleware();
+
+app.UseConsumerLogging();
+
 app.MapControllers();
 
 // Running database migrations on startup
