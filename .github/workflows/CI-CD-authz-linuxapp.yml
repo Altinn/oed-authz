@@ -1,14 +1,14 @@
 name: CI/CD authz-app linux
 
 on:
-  # push:
-  #   branches:
-  #     - master
+  push:
+    branches:
+      - master
   workflow_dispatch:
 env:
   DOTNET_VERSION: "8.x" # Global environment variables
   TEST_APP_SERVICE_NAME: "oed-test-authz-app-74193"
-  PROD_APP_SERVICE_NAME: "oed-authz-app-74193"
+  PROD_APP_SERVICE_NAME: "oed-prod-authz-app-linux"
   PROD_RESOURCE_GROUP_NAME: "altinn-digdir-oed-rg"
 
 jobs:
@@ -68,28 +68,28 @@ jobs:
           publish-profile: ${{ secrets.PUBLISH_PROFILE_LINUX }}
           package: ./publish/
 
-  # deploy-to-prod:
-  #   name: Deploy to Production Environment
-  #   needs: deploy-to-test
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: production
+  deploy-to-prod:
+    name: Deploy to Production Environment
+    needs: deploy-to-test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
 
-  #   steps:
-  #     - name: Await Manual Approval
-  #       if: ${{ github.ref == 'refs/heads/main' }}
-  #       run: |
-  #         echo "Waiting for manual approval"
-  #         echo "::pause::"
-  #     - name: Download Build Artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: published-artifacts
-  #         path: ./publish/
+    steps:
+      - name: Await Manual Approval
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          echo "Waiting for manual approval"
+          echo "::pause::"
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: published-artifacts
+          path: ./publish/
 
-  #     - name: Deploy to Azure App Service Staging Slot
-  #       uses: azure/webapps-deploy@v3
-  #       with:
-  #         app-name: "${{ env.PROD_APP_SERVICE_NAME }}"
-  #         publish-profile: ${{ secrets.PUBLISH_PROFILE_LINUX }}
-  #         package: ./publish/
+      - name: Deploy to Azure App Service Staging Slot
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "${{ env.PROD_APP_SERVICE_NAME }}"
+          publish-profile: ${{ secrets.PUBLISH_PROFILE_LINUX }}
+          package: ./publish/
