@@ -6,7 +6,7 @@ on:
       - master
   workflow_dispatch:
 env:
-  DOTNET_VERSION: "8.x" # Global environment variables
+  DOTNET_VERSION: "10.x" # Global environment variables
   TEST_APP_SERVICE_NAME: "oed-test-authz-app-74193"
   PROD_APP_SERVICE_NAME: "oed-prod-authz-app-linux"
   PROD_RESOURCE_GROUP_NAME: "altinn-digdir-oed-rg"
