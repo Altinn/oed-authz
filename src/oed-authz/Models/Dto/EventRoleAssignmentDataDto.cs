@@ -25,5 +25,8 @@ public enum CaseStatus
 
     [System.Runtime.Serialization.EnumMember(Value = @"FEILFORT")]
     FEILFORT = 2,
+
+    [System.Runtime.Serialization.EnumMember(Value = @"OVERFORT_ANNEN_DOMSTOL")]
+    OVERFORT_ANNEN_DOMSTOL = 3,
 }
 
