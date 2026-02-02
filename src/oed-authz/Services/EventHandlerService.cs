@@ -52,7 +52,7 @@ public class AltinnEventHandlerService(
         }
 
         var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
-        logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventRoleAssignments.DaCaseId);
+        logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventRoleAssignments?.DaCaseId);
 
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
