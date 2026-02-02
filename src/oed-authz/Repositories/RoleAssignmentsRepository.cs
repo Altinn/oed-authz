@@ -21,9 +21,6 @@ namespace oed_authz.Repositories
 
         public async Task AddRoleAssignment(RoleAssignment roleAssignment)
         {
-            _logger.LogInformation("Granting role: {RoleAssignment}", 
-                JsonSerializer.Serialize(roleAssignment));
-
             await _dbContext.RoleAssignments.AddAsync(roleAssignment);
             await _dbContext.SaveChangesAsync();
         }
@@ -48,9 +45,6 @@ namespace oed_authz.Repositories
 
         public Task RemoveRoleAssignment(RoleAssignment roleAssignment)
         {
-            _logger.LogInformation("Revoking role: {RoleAssignment}",
-                JsonSerializer.Serialize(roleAssignment));
-
             return _dbContext.RoleAssignments
                 .Where(ra =>
                     ra.EstateSsn == roleAssignment.EstateSsn

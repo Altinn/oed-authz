@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using oed_authz.Interfaces;
+﻿using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Settings;
 using oed_authz.Utils;
@@ -74,9 +73,6 @@ public class ProxyManagementService : IProxyManagementService
 
         foreach (var invalidIndividualProxyAssignment in invalidIndividualProxyAssignments)
         {
-            _logger.LogInformation("Removing no longer valid individual proxy assignment: {InvalidIndividualProxyAssignment}",
-                JsonSerializer.Serialize(invalidIndividualProxyAssignment));
-
             await _oedRoleRepositoryService.RemoveRoleAssignment(
                 new RoleAssignment
                 {
@@ -107,7 +103,6 @@ public class ProxyManagementService : IProxyManagementService
         // Grant the collective proxy role to the eligible recipients
         foreach (var eligibleRecipient in eligibleRecipientsWithoutCollectiveProxyRole)
         {
-            _logger.LogInformation("Granting collective proxy role to eligible recipient: {EligibleRecipient}", eligibleRecipient);
             await _oedRoleRepositoryService.AddRoleAssignment(
                 new RoleAssignment
                 {
@@ -127,9 +122,6 @@ public class ProxyManagementService : IProxyManagementService
         // Revoke the collective proxy role from the recipients that should no longer have it
         foreach (var noLongerEligbleRecipient in noLongerEligbleRecipientsWithCollectiveProxyRole)
         {
-            _logger.LogInformation("Revoking collective proxy role from no longer eligible recipient: {NoLongerEligbleRecipient}",
-                JsonSerializer.Serialize(noLongerEligbleRecipient));
-
             await _oedRoleRepositoryService.RemoveRoleAssignment(
                 new RoleAssignment
                 {

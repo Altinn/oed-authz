@@ -51,9 +51,9 @@ public class AltinnEventHandlerService(
             throw new ArgumentNullException(nameof(daEvent.Data));
         }
 
-        logger.LogInformation("Handling event {Id}: {CloudEvent}", daEvent.Id, JsonSerializer.Serialize(daEvent));
-
         var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
+        logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventRoleAssignments.DaCaseId);
+
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
         if (eventRoleAssignments.CaseStatus == CaseStatus.FEILFORT)
