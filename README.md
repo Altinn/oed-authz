@@ -2,7 +2,7 @@
 ASP.NET Core Web API handling events for OED/DD roles, persisting them and providing av PIP API for Altinn Authorization. 
 This also exposes an API for external consumers requiring Maskinporten-authentication.
 
-See https://oed-test-authz-app.azurewebsites.net/swagger/ for API documentation.
+See [https://digitaltdodsbo.tt02.altinn.no/swagger](https://digitaltdodsbo.tt02.altinn.no/swagger) for API documentation.
 
 ## Using the API for external consumers (banks etc.)
 
@@ -23,7 +23,7 @@ Requests must contain a `Authorization`-header with a Maskinporten-token using t
 must be a JSON object with `estateSsn`, or `recipientSsn`, or both, which must be 11-digit norwegian identification numbers. 
 
 ```jsonc
-// POST https://oed-test-authz-app.azurewebsites.net/api/v1/authorization/roles/search
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
 {
     "estateSsn": "11111111111"
     // "recipientSsn": "22222222211" // Only one of "estateSsn" and "recipientSsn" is required
@@ -73,7 +73,7 @@ Requests must contain a `Authorization`-header with a Maskinporten-token using t
 must be a JSON object with `estateSsn`, or `recipientSsn`, or both, which must be 11-digit norwegian identification numbers. 
 
 ```jsonc
-// POST https://oed-test-authz-app.azurewebsites.net/api/v1/authorization/proxies/search
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/proxies/search
 {
     "estateSsn": "11111111111" // this estate has two heirs with probate certificates; 22222222211 and 33333333311
 }
@@ -128,7 +128,7 @@ This requires a Maskinporten-token with the scope `altinn:dd:internal`
 #### Example
 
 ```jsonc
-// POST https://oed-test-authz-app.azurewebsites.net/api/v1/pip
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/pip
 {
     "from": "11111111111",
     // "to": "22222222211" // Only one of "from" and "to" is required
@@ -186,7 +186,7 @@ endpoint.
 Post the body below to the `add` endpoint. `created` can be omitted, and will be set to the current time if omitted.
 
 ```jsonc
-// POST https://oed-test-authz-app.azurewebsites.net/api/v1/authorization/proxies/add
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/proxies/add
 {
     "add": {
         "estateSsn": "11111111111"
@@ -204,7 +204,7 @@ Post the body below to the `add` endpoint. `created` can be omitted, and will be
 Post the body below to the `remove` endpoint. 
 
 ```http
-// POST https://oed-test-authz-app.azurewebsites.net/api/v1/authorization/proxies/remove
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/proxies/remove
 {
     "remove": {
         "estateSsn": "11111111111"
