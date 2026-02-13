@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Altinn.Dd.InternalEvents.Estate;
 using oed_authz.Infrastructure.Database;
 using oed_authz.Infrastructure.Database.Model;
 using oed_authz.Interfaces;
@@ -51,18 +52,18 @@ public class AltinnEventHandlerService(
             throw new ArgumentNullException(nameof(daEvent.Data));
         }
 
-        var eventRoleAssignments = JsonSerializer.Deserialize<EventRoleAssignmentDataDto>(daEvent.Data.ToString()!)!;
-        logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventRoleAssignments?.DaCaseId);
+        var eventData = JsonSerializer.Deserialize<EstateCaseUpdatedEvent>(daEvent.Data.ToString()!)!;
+        logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventData.CaseId);
 
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
-        if (eventRoleAssignments.CaseStatus == CaseStatus.FEILFORT)
+        if (eventData.CaseStatus == CaseStatus.Feilfort)
         {
             await RemoveAllRoleAssignmentsForEstate(estateSsn, daEvent.Id);
         }
         else
         {
-            await UpdateCourtAssignedRoleAssignments(estateSsn, eventRoleAssignments, daEvent.Id, daEvent.Time);
+            await UpdateCourtAssignedRoleAssignments(estateSsn, eventData, daEvent.Id, daEvent.Time);
             // Handle collective proxy roles
             await proxyManagementService.UpdateProxyRoleAssigments(estateSsn);
         }
@@ -73,8 +74,8 @@ public class AltinnEventHandlerService(
     }
 
     private async Task UpdateCourtAssignedRoleAssignments(
-        string estateSsn, 
-        EventRoleAssignmentDataDto eventRoleAssignments, 
+        string estateSsn,
+        EstateCaseUpdatedEvent eventRoleAssignments, 
         string eventId,
         DateTimeOffset eventTime)
     {
@@ -87,13 +88,13 @@ public class AltinnEventHandlerService(
         var assignmentsToAdd = new List<RoleAssignment>();
         foreach (var updatedRoleAssignment in eventRoleAssignments.HeirRoles)
         {
-            if (!SsnUtils.IsValidSsn(updatedRoleAssignment.Nin))
+            if (!SsnUtils.IsValidSsn(updatedRoleAssignment.Nin!))
             {
                 throw new ArgumentException(nameof(updatedRoleAssignment.Nin));
             }
 
             // Check that all role codes are within the correct namespace
-            if (!updatedRoleAssignment.Role.StartsWith(Constants.CourtRoleCodePrefix))
+            if (!updatedRoleAssignment.Role!.StartsWith(Constants.CourtRoleCodePrefix))
             {
                 throw new ArgumentException("Rolecode must start with " + Constants.CourtRoleCodePrefix);
             }
@@ -106,7 +107,7 @@ public class AltinnEventHandlerService(
                 assignmentsToAdd.Add(new RoleAssignment
                 {
                     EstateSsn = estateSsn,
-                    RecipientSsn = updatedRoleAssignment.Nin,
+                    RecipientSsn = updatedRoleAssignment.Nin!,
                     RoleCode = updatedRoleAssignment.Role,
                     Created = eventTime.ToUniversalTime()
                 });
@@ -117,8 +118,7 @@ public class AltinnEventHandlerService(
         var assignmentsToRemove = new List<RoleAssignment>();
         foreach (var currentRoleAssignment in currentCourtAssignedRoleAssignments)
         {
-            if (!eventRoleAssignments.HeirRoles
-                .Exists(x =>
+            if (!eventRoleAssignments.HeirRoles.Any(x =>
                     x.Nin == currentRoleAssignment.RecipientSsn && 
                     x.Role == currentRoleAssignment.RoleCode))
             {

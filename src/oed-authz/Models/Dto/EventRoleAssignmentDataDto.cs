@@ -2,31 +2,24 @@
 
 namespace oed_authz.Models.Dto;
 
-public class EventRoleAssignmentDataDto
+//public class EventRoleAssignmentDataDto
+//{
+//    [JsonPropertyName("caseId")]
+//    public string DaCaseId  { get; set; } = string.Empty;
+
+//    [JsonPropertyName("caseStatus")]
+//    [JsonConverter(typeof(JsonStringEnumConverter))]
+//    public CaseStatus? CaseStatus { get; set; }
+
+//    [JsonPropertyName("heirRoles")]
+//    public List<EventRoleAssignmentDto> HeirRoles  { get; set; } = new();
+//}
+
+
+public static class CaseStatus
 {
-    [JsonPropertyName("caseId")]
-    public string DaCaseId  { get; set; } = string.Empty;
-
-    [JsonPropertyName("caseStatus")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public CaseStatus? CaseStatus { get; set; }
-
-    [JsonPropertyName("heirRoles")]
-    public List<EventRoleAssignmentDto> HeirRoles  { get; set; } = new();
+    public static string Mottatt = "MOTTATT";
+    public static string Ferdigbehandlet = "FERDIGBEHANDLET";
+    public static string Feilfort = "FEILFORT";
+    public static string OverfortAnnenDomstol = "OVERFORT_ANNEN_DOMSTOL";
 }
-
-public enum CaseStatus
-{
-    [System.Runtime.Serialization.EnumMember(Value = @"MOTTATT")]
-    MOTTATT = 0,
-
-    [System.Runtime.Serialization.EnumMember(Value = @"FERDIGBEHANDLET")]
-    FERDIGBEHANDLET = 1,
-
-    [System.Runtime.Serialization.EnumMember(Value = @"FEILFORT")]
-    FEILFORT = 2,
-
-    [System.Runtime.Serialization.EnumMember(Value = @"OVERFORT_ANNEN_DOMSTOL")]
-    OVERFORT_ANNEN_DOMSTOL = 3,
-}
-

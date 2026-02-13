@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Altinn.Dd.InternalEvents.Estate;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +10,7 @@ using oed_authz.Models.Dto;
 using oed_authz.Repositories;
 using oed_authz.Services;
 using oed_authz.Settings;
+using System.Text.Json;
 
 namespace oed_authz.IntegrationTests.Services;
 
@@ -51,18 +52,22 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         // Arrange
         var estateSsn = _databaseFixture.NextSsn;
 
-        var eventRoleAssignments = new EventRoleAssignmentDataDto
+        var eventRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = Guid.NewGuid().ToString(),
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999991",
                     Role = Constants.FormuesfullmaktRoleCode
                 },
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999992",
                     Role = Constants.FormuesfullmaktRoleCode
@@ -138,10 +143,15 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         await _dbContext.SaveChangesAsync();
 
 
-        var eventRoleAssignments = new EventRoleAssignmentDataDto
+        var eventRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = Guid.NewGuid().ToString(),
-            CaseStatus = CaseStatus.FEILFORT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Feilfort,
+            HeirRoles = []
         };
 
         var cloudEvent = new CloudEvent
@@ -171,13 +181,17 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var daCaseId = Guid.NewGuid().ToString();
         var timestamp = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero);
 
-        var roleAssignments = new EventRoleAssignmentDataDto
+        var roleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999991",
                     Role = Constants.FormuesfullmaktRoleCode
@@ -219,10 +233,14 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var daCaseId = Guid.NewGuid().ToString();
         var timestamp = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero);
 
-        var arrangeRoleAssignments = new EventRoleAssignmentDataDto
+        var arrangeRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles = []
         };
 
@@ -242,13 +260,17 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         arrangeCursor.LastTimestampProcessed.Should().Be(timestamp.Subtract(TimeSpan.FromSeconds(1)));
 
         // Act
-        var roleAssignments = new EventRoleAssignmentDataDto
+        var roleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999991",
                     Role = Constants.FormuesfullmaktRoleCode
@@ -286,10 +308,14 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var daCaseId = Guid.NewGuid().ToString();
         var timestamp = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero);
 
-        var arrangeRoleAssignments = new EventRoleAssignmentDataDto
+        var arrangeRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles = []
         };
 
@@ -309,13 +335,17 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         arrangeCursor.LastTimestampProcessed.Should().Be(timestamp.Subtract(TimeSpan.FromSeconds(1)));
 
         // Act
-        var roleAssignments = new EventRoleAssignmentDataDto
+        var roleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "", // Should throws argument exception
                     Role = Constants.FormuesfullmaktRoleCode
@@ -354,17 +384,20 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var daCaseId = Guid.NewGuid().ToString();
         var timestamp = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero);
 
-        var roleAssignments = new EventRoleAssignmentDataDto
+        var roleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "", // Should throw ArgumentException
-                    Role = Constants.FormuesfullmaktRoleCode
-                }
+                    Role = Constants.FormuesfullmaktRoleCode                }
             ]
         };
 
@@ -401,13 +434,17 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var estateSsn = _databaseFixture.NextSsn;
         var daCaseId = Guid.NewGuid().ToString();
 
-        var latestRoleAssignments = new EventRoleAssignmentDataDto
+        var latestRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999991",
                     Role = Constants.FormuesfullmaktRoleCode
@@ -434,10 +471,14 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         arrangedRoleAssignments.Should().OnlyContain(ra => ra.RoleCode == Constants.FormuesfullmaktRoleCode);
 
         // Act
-        var outOfOrderRoleAssignments = new EventRoleAssignmentDataDto
+        var outOfOrderRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles = []
         };
 
@@ -471,13 +512,17 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var daCaseId = Guid.NewGuid().ToString();
         var timestamp = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero);
 
-        var roleAssignments = new EventRoleAssignmentDataDto
+        var roleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles =
             [
-                new EventRoleAssignmentDto
+                new HeirRole
                 {
                     Nin = "99999999991",
                     Role = Constants.FormuesfullmaktRoleCode
@@ -504,10 +549,14 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         arrangedRoleAssignments.Should().OnlyContain(ra => ra.RoleCode == Constants.FormuesfullmaktRoleCode);
 
         // Act
-        var anotherRoleAssignments = new EventRoleAssignmentDataDto
+        var anotherRoleAssignments = new EstateCaseUpdatedEvent
         {
-            DaCaseId = daCaseId,
-            CaseStatus = CaseStatus.MOTTATT,
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
             HeirRoles = []
         };
 
