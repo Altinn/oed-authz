@@ -24,6 +24,7 @@ public static class Constants
     public const string ProbateRoleCode = "urn:domstolene:digitaltdodsbo:skifteattest";
     public const string FormuesfullmaktRoleCode = "urn:domstolene:digitaltdodsbo:formuesfullmakt";
     public const string SuperadminRoleCode = "urn:altinn:digitaltdodsbo:superadmin";
+    public const string? NoRoleCode = null;
 
     public static IReadOnlyCollection<string> ProbateAndProxyRoles => [ProbateRoleCode, IndividualProxyRoleCode, CollectiveProxyRoleCode];
 }

@@ -60,18 +60,19 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = Guid.NewGuid().ToString(),
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "99999999991",
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 },
-                new HeirRole
+                new PersonHeirRole
                 {
                     Nin = "99999999992",
-                    Role = Constants.FormuesfullmaktRoleCode
-                },
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
             ]
         };
 
@@ -151,7 +152,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = Guid.NewGuid().ToString(),
             CaseStatus = CaseStatus.Feilfort,
-            HeirRoles = []
+            HeirRolesV2 = []
         };
 
         var cloudEvent = new CloudEvent
@@ -189,12 +190,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "99999999991",
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 }
             ]
         };
@@ -241,7 +242,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles = []
+            HeirRolesV2 = []
         };
 
         var arrangeCloudEvent = new CloudEvent
@@ -268,12 +269,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "99999999991",
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 }
             ]
         };
@@ -316,7 +317,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles = []
+            HeirRolesV2 = []
         };
 
         var arrangeCloudEvent = new CloudEvent
@@ -343,12 +344,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "", // Should throws argument exception
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 }
             ]
         };
@@ -392,12 +393,13 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
-                    Nin = "", // Should throw ArgumentException
-                    Role = Constants.FormuesfullmaktRoleCode                }
+                    Nin = "", // Should throws argument exception
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
             ]
         };
 
@@ -442,12 +444,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "99999999991",
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 }
             ]
         };
@@ -479,7 +481,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles = []
+            HeirRolesV2 = []
         };
 
         var outOfOrderEvent = new CloudEvent
@@ -520,12 +522,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles =
-            [
-                new HeirRole
+            HeirRolesV2 = [
+                new PersonHeirRole
                 {
                     Nin = "99999999991",
-                    Role = Constants.FormuesfullmaktRoleCode
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
                 }
             ]
         };
@@ -557,7 +559,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             DistrictCourtName = "Oslo tingrett",
             CaseId = daCaseId,
             CaseStatus = CaseStatus.Mottatt,
-            HeirRoles = []
+            HeirRolesV2 = []
         };
 
         var anotherEvent = new CloudEvent
@@ -580,6 +582,151 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             rra.RoleCode == Constants.FormuesfullmaktRoleCode && // No changes in role codes
             arrangedRoleAssignments.Any(ara =>
                 ara.Id == rra.Id)); // All the same ids as before. No delete with new inserts.
+    }
+
+    [Fact]
+    public async Task HandleEvent_V2EventWithAllPartTypes_ShouldOnlyAssignRolesToPersonsWithSkiftefullmakt()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+
+        var eventRoleAssignments = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999991",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn
+                },
+                new PersonHeirRole
+                {
+                    Nin = "99999999992",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn
+                },
+                new PersonHeirRole
+                {
+                    Nin = "99999999993",
+                    Role = Constants.NoRoleCode,    // Person without formuesfullmakt => role = null
+                    Relation = HeirRoleRelation.Barn
+                },
+                new PappPersonHeirRole
+                {
+                    Name = "PappPerson",
+                    DateOfBirth = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    Relation = HeirRoleRelation.Barn,
+                },
+                new OrganizationHeirRole
+                {
+                    OrgNo = "123456789",
+                    Relation = HeirRoleRelation.TestamentarvingBegrenset,
+                },
+                new PappOrganizationHeirRole
+                {
+                    Name = "PappOrg",
+                    Relation = HeirRoleRelation.TestamentarvingBegrenset,
+                }
+            ]
+        };
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.Now,
+            Type = Events.Oed.CaseStatusUpdateValidated,
+            //Subject = $"person/{estateSsn}",
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(eventRoleAssignments)
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        var roleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        roleAssignments.Should().HaveCount(2);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999991" &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999992" &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+    }
+
+    [Fact]
+    public async Task HandleEvent_V2EventWithPersonParts_ShouldAssignRolesToPersonsWithSkiftefullmaktOrProbateRoleCode()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+
+        var eventRoleAssignments = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999991",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn
+                },
+                new PersonHeirRole
+                {
+                    Nin = "99999999992",
+                    Role = Constants.ProbateRoleCode,
+                    Relation = HeirRoleRelation.Barn
+                },
+                new PersonHeirRole
+                {
+                    Nin = "99999999993",
+                    Role = Constants.NoRoleCode,    // Person without formuesfullmakt => role = null
+                    Relation = HeirRoleRelation.Barn
+                }
+            ]
+        };
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.Now,
+            Type = Events.Oed.CaseStatusUpdateValidated,
+            //Subject = $"person/{estateSsn}",
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(eventRoleAssignments)
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        var roleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        roleAssignments.Should().HaveCount(3);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999991" &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999992" &&
+            ra.RoleCode == Constants.ProbateRoleCode);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999992" &&
+            ra.RoleCode == Constants.CollectiveProxyRoleCode);
+        roleAssignments.Should().NotContain(ra =>
+            ra.RecipientSsn == "99999999993");
     }
 
     public Task InitializeAsync() => Task.CompletedTask;

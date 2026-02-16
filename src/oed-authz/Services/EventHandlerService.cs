@@ -4,7 +4,6 @@ using oed_authz.Infrastructure.Database;
 using oed_authz.Infrastructure.Database.Model;
 using oed_authz.Interfaces;
 using oed_authz.Models;
-using oed_authz.Models.Dto;
 using oed_authz.Settings;
 using oed_authz.Utils;
 
@@ -75,7 +74,7 @@ public class AltinnEventHandlerService(
 
     private async Task UpdateCourtAssignedRoleAssignments(
         string estateSsn,
-        EstateCaseUpdatedEvent eventRoleAssignments, 
+        EstateCaseUpdatedEvent eventData, 
         string eventId,
         DateTimeOffset eventTime)
     {
@@ -83,20 +82,24 @@ public class AltinnEventHandlerService(
         var currentCourtAssignedRoleAssignments = (await oedRoleRepositoryService.GetRoleAssignmentsForEstate(estateSsn))
             .Where(x => x.RoleCode.StartsWith(Constants.CourtRoleCodePrefix))
             .ToList();
-        
+
         // Find assignments in updated list but not in current list to add
         var assignmentsToAdd = new List<RoleAssignment>();
-        foreach (var updatedRoleAssignment in eventRoleAssignments.HeirRoles)
+        
+        // Only persons with Nin and a valid role code can be given access
+        var eventRoleAssignments =
+            eventData.HeirRolesV2
+                .OfType<PersonHeirRole>()
+                .Where(p =>
+                    p.Role is not null &&
+                    p.Role.StartsWith(Constants.CourtRoleCodePrefix))
+                .ToArray();
+
+        foreach (var updatedRoleAssignment in eventRoleAssignments)
         {
             if (!SsnUtils.IsValidSsn(updatedRoleAssignment.Nin!))
             {
                 throw new ArgumentException(nameof(updatedRoleAssignment.Nin));
-            }
-
-            // Check that all role codes are within the correct namespace
-            if (!updatedRoleAssignment.Role!.StartsWith(Constants.CourtRoleCodePrefix))
-            {
-                throw new ArgumentException("Rolecode must start with " + Constants.CourtRoleCodePrefix);
             }
 
             if (!currentCourtAssignedRoleAssignments
@@ -118,7 +121,7 @@ public class AltinnEventHandlerService(
         var assignmentsToRemove = new List<RoleAssignment>();
         foreach (var currentRoleAssignment in currentCourtAssignedRoleAssignments)
         {
-            if (!eventRoleAssignments.HeirRoles.Any(x =>
+            if (!eventRoleAssignments.Any(x =>
                     x.Nin == currentRoleAssignment.RecipientSsn && 
                     x.Role == currentRoleAssignment.RoleCode))
             {
