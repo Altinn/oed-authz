@@ -7,7 +7,7 @@
     <UserSecretsId>cda3e3e5-bca1-4618-9652-784469c6c7da</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Altinn.Dd.InternalEvents" Version="1.0.1" />
+    <PackageReference Include="Altinn.Dd.InternalEvents" Version="1.1.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">

@@ -619,7 +619,12 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
                 },
                 new PappPersonHeirRole
                 {
-                    Name = "PappPerson",
+                    Name = new PersonName
+                    {
+                        FirstName = "Papp",
+                        MiddleName = ["Pappson"],
+                        LastName = "Person"
+                    },
                     DateOfBirth = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     Relation = HeirRoleRelation.Barn,
                 },

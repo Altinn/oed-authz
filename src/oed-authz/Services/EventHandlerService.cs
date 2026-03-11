@@ -111,7 +111,7 @@ public class AltinnEventHandlerService(
                 {
                     EstateSsn = estateSsn,
                     RecipientSsn = updatedRoleAssignment.Nin!,
-                    RoleCode = updatedRoleAssignment.Role,
+                    RoleCode = updatedRoleAssignment.Role!,
                     Created = eventTime.ToUniversalTime()
                 });
             }
