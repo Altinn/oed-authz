@@ -6,58 +6,23 @@ See [https://digitaltdodsbo.tt02.altinn.no/swagger](https://digitaltdodsbo.tt02.
 
 ## Using the API for external consumers (banks etc.)
 
-There are two API endpoints; one for retrieving court assigned roles for a given estate, and one for retrieving proxy roles
-assigned from the heirs to others within the estate.
+External consumers should use the endpoint `/api/v1/authorization/roles/search`. This endpoint requires a Maskinporten-token with the scope `altinn:dd:authlookup`. The response will contain any court assigned roles and user assigned proxy roles. The following role codes will be made available:
 
 ### Court assigned roles
+| Role code | Description
+| :--- | :--- |
+| `urn:domstolene:digitaltdodsbo:formuesfullmakt` | An heir with a power of attorney over assets has the right to insight into the values of an estate. <br /><br />After a probate certificate is issued this role could be is somewhat restricted based on business rules. In these cases the additional property `isRestricted` will be `true`. |
+| `urn:domstolene:digitaltdodsbo:skifteattest` | An heir who has assumed liability for the debts of an estate can act on behalf of the estate together with any other heirs who have assumed debt liability |
 
-For court assigned roles use `/api/v1/authorization/roles/search`. This endpoint requires a Maskinporten-token with the scope; 
-`altinn:dd:authlookup`. The following role codes will be made available
-
-* `urn:domstolene:digitaltdodsbo:formuesfullmakt` 
-* `urn:domstolene:digitaltdodsbo:skifteattest` 
-
-#### Example
-
-Requests must contain a `Authorization`-header with a Maskinporten-token using the `Bearer` scheme. The request body 
-must be a JSON object with `estateSsn`, or `recipientSsn`, or both, which must be 11-digit norwegian identification numbers. 
-
-```jsonc
-// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
-{
-    "estateSsn": "11111111111"
-    // "recipientSsn": "22222222211" // Only one of "estateSsn" and "recipientSsn" is required
-}
-```
-
-Response:
-```jsonc
-{    
-    "roleAssignments": [
-        {
-            "estateSsn": "11111111111",
-            "recipientSsn": "22222222211",
-            "role": "urn:domstolene:digitaltdodsbo:skifteattest",
-            "created": "2023-02-20T10:00:06.401416+00:00"
-        },
-        {
-            "estateSsn": "11111111111",
-            "recipientSsn": "22222222211",
-            "role": "urn:domstolene:digitaltdodsbo:skifteattest",
-            "created": "2023-02-20T10:00:06.401416+00:00"
-        }
-    ]
-}
-```
 ### Proxy roles
 
 Within an estate, heirs with a probate certificate can assign proxies that may act on their behalf. These roles are not
-assigned by the court, but by the heirs themselves. To retrieve these proxy roles, use the endpoint `/api/v1/authorization/proxies/search`.
+assigned by the court, but by the heirs themselves.
 
-The following role codes are currently available:
-
-* `urn:altinn:digitaltdodsbo:skiftefullmakt:individuell` (granted to a specific heir from a specific heir)
-* `urn:altinn:digitaltdodsbo:skiftefullmakt:kollektiv` (granted to a specific heir from all heirs)
+| Role code | Description
+| :--- | :--- |
+| `urn:altinn:digitaltdodsbo:skiftefullmakt:individuell` | An heir with an individual power of attorney over assets has been granted the right to act on behalf of another heir in the estate who has assumed debt liability for the estate. |
+| `urn:altinn:digitaltdodsbo:skiftefullmakt:kollektiv` | An heir who has received a power of attorney for the settlement of the estate from all the other heirs in the estate can act on behalf of the estate alone. |
 
 Note that the `kollektiv` role is assigned if and only if all heirs with a probate certificate have appointed the same 
 proxy. Thus, for a recipient to receive the `kollektiv` role, the response will also contain a `individuell` role for all 
@@ -65,48 +30,192 @@ heirs with a probate certificate to that same recipient (unless that recipient a
 no need to assign a proxy role to oneself).  If at any point any of the heirs with a probate certificate revokes their 
 `individuell` role, the `kollektiv` role will also be revoked.
 
-If no relation (ie. role assignment) exists, an empty `roleAssignments` array will be returned.
+> [!WARNING]
+> The roles can change at any time, so values returned from the endpoint must not be cached by the consumers.
 
-#### Example
+### Examples
 
-Requests must contain a `Authorization`-header with a Maskinporten-token using the `Bearer` scheme. The request body
-must be a JSON object with `estateSsn`, or `recipientSsn`, or both, which must be 11-digit norwegian identification numbers. 
+Requests must contain a `Authorization`-header with a Maskinporten-token using the `Bearer` scheme. The request body 
+must be a JSON object with `estateSsn`, which must be 11-digit norwegian identification numbers. 
+
+
+#### Scenario 1
+In this scenario there is only one heir to the estate. The probate certificate has been isued to the single heir and the single heir can act on behalf of the estate alone.
 
 ```jsonc
-// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/proxies/search
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
 {
-    "estateSsn": "11111111111" // this estate has two heirs with probate certificates; 22222222211 and 33333333311
+    "estateSsn": "01827974788"
 }
 ```
 
 Response:
 ```jsonc
-{    
-    "proxyAssignments": [
-        {
-            "estateSsn": "11111111111",
-            "heirSsn": null, // Assigned from the estate itself (ie no particular heir); can act on behalf of all heirs  
-            "recipientSsn": "44444444411",
-            "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:kollektiv",
-            "created": "2023-02-20T10:00:06.401416+00:00"
-        },
-        {
-            // Assigned from the individual heir; can act on behalf of that heir
-            "estateSsn": "11111111111",
-            "heirSsn": "22222222211",
-            "recipientSsn": "44444444411",
-            "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell",
-            "created": "2023-02-20T10:00:06.401416+00:00"
-        },
-        {
-            // Assigned from the individual heir; can act on behalf of that heir
-            "estateSsn": "11111111111",
-            "heirSsn": "33333333311",
-            "recipientSsn": "44444444411",
-            "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell",
-            "created": "2023-02-20T10:00:06.401416+00:00"
-        }
-    ]
+{
+  "roleAssignments": [
+    {
+      "estateSsn": "01827974788",
+      "recipientSsn": "28857697520",
+      "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:kollektiv",
+      "created": "2026-03-19T13:19:04.625861+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "01827974788",
+      "recipientSsn": "28857697520",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:18:30.83395+00:00",
+      "isRestricted": false
+    }
+  ]
+}
+```
+
+#### Scenario 2
+In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs. The heirs can act on behalf of the estate together with the other heirs, but not alone.
+
+```jsonc
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
+{
+    "estateSsn": "18855699938"
+}
+```
+
+Response:
+```jsonc
+{
+  "roleAssignments": [
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "20856099858",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "28857697520",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    }
+  ]
+}
+```
+
+#### Scenario 3
+In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs, but two of the heirs has given the power of attorney proxy role to the third heir. The third heir has therefore the right to act on behalf of the estate alone.
+
+```jsonc
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
+{
+    "estateSsn": "18855699938"
+}
+```
+
+Response:
+```jsonc
+{
+  "roleAssignments": [
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "20856099858",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "28857697520",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "heirSsn": "20856099858",
+      "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell",
+      "created": "2026-03-19T14:45:11.245322+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "heirSsn": "28857697520",
+      "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell",
+      "created": "2026-03-19T14:45:11.245322+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:kollektiv",
+      "created": "2026-03-19T14:45:11.245322+00:00",
+      "isRestricted": false
+    },
+  ]
+}
+```
+
+#### Scenario 4
+In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs. Heir one has given the power of attorney proxy role to the third heir, but the second heir has not. The third heir can act on behalf of the first heir, an therefore on behalf of the estate together with the second heir.
+
+```jsonc
+// POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
+{
+    "estateSsn": "18855699938"
+}
+```
+
+Response:
+```jsonc
+{
+  "roleAssignments": [
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "20856099858",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "28857697520",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "role": "urn:domstolene:digitaltdodsbo:skifteattest",
+      "created": "2026-03-19T13:16:50.571733+00:00",
+      "isRestricted": false
+    },
+    {
+      "estateSsn": "18855699938",
+      "recipientSsn": "24848299983",
+      "heirSsn": "20856099858",
+      "role": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell",
+      "created": "2026-03-19T14:45:11.245322+00:00",
+      "isRestricted": false
+    }
+  ]
 }
 ```
 
