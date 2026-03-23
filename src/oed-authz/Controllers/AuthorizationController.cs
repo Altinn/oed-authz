@@ -127,6 +127,7 @@ public class AuthorizationController : Controller
                 new RoleAssignmentDto()
                 {
                     EstateSsn = pipRoleAssignment.EstateSsn,
+                    HeirSsn = pipRoleAssignment.HeirSsn!,
                     RecipientSsn = pipRoleAssignment.RecipientSsn,
                     Role = pipRoleAssignment.RoleCode,
                     Created = pipRoleAssignment.Created,

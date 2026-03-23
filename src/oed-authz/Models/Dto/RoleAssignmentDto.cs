@@ -3,6 +3,7 @@
 public class RoleAssignmentDto
 {
     public string EstateSsn { get; set; } = null!;
+    public string HeirSsn { get; set; } = null!;
     public string RecipientSsn { get; set; } = null!;
     public string Role { get; set; } = null!;
     public DateTimeOffset Created { get; set; }
