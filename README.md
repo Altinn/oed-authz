@@ -97,7 +97,7 @@ In this scenario there are three heirs to the estate. Probate certificate has be
 Response:
 ```jsonc
 {
-  "roleAssignments": [<img width="189" height="150" alt="oed_authz_scenario_4_partial_delegation" src="https://github.com/user-attachments/assets/33b54553-4b9e-491a-8a1a-2086daa4b5f1" />
+  "roleAssignments": [
 
     {
       "estateSsn": "18855699938",
