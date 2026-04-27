@@ -5,8 +5,11 @@ This also exposes an API for external consumers requiring Maskinporten-authentic
 See [https://digitaltdodsbo.tt02.altinn.no/swagger](https://digitaltdodsbo.tt02.altinn.no/swagger) for API documentation.
 
 ## Using the API for external consumers (banks etc.)
-
 External consumers should use the endpoint `/api/v1/authorization/roles/search`. This endpoint requires a Maskinporten-token with the scope `altinn:dd:authlookup`. The response will contain any court assigned roles and user assigned proxy roles. The following role codes will be made available:
+<p align="center">
+    <img width="500" alt="oed_authz_role_types" src="https://github.com/user-attachments/assets/0a30bad3-1711-41ad-8410-417f878c152d" />
+</p>
+
 
 ### Court assigned roles
 | Role code | Description
@@ -41,6 +44,12 @@ must be a JSON object with `estateSsn`, which must be 11-digit norwegian identif
 
 #### Scenario 1
 In this scenario there is only one heir to the estate. The probate certificate has been isued to the single heir and the single heir can act on behalf of the estate alone.
+<p align="center">
+    <img width="500" alt="oed_authz_scenario_1_sole_heir" src="https://github.com/user-attachments/assets/6d444e8b-d7d9-46dd-9871-73c5019756f3" />
+</p>
+
+
+
 
 ```jsonc
 // POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
@@ -74,6 +83,10 @@ Response:
 #### Scenario 2
 In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs. The heirs can act on behalf of the estate together with the other heirs, but not alone.
 
+<p align="center">
+    <img width="500" alt="oed_authz_scenario_2_no_delegation" src="https://github.com/user-attachments/assets/75a12d8f-0410-41e2-9bf1-05133288b41f" />
+</p>
+
 ```jsonc
 // POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
 {
@@ -84,7 +97,8 @@ In this scenario there are three heirs to the estate. Probate certificate has be
 Response:
 ```jsonc
 {
-  "roleAssignments": [
+  "roleAssignments": [<img width="189" height="150" alt="oed_authz_scenario_4_partial_delegation" src="https://github.com/user-attachments/assets/33b54553-4b9e-491a-8a1a-2086daa4b5f1" />
+
     {
       "estateSsn": "18855699938",
       "recipientSsn": "20856099858",
@@ -112,6 +126,10 @@ Response:
 
 #### Scenario 3
 In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs, but two of the heirs has given the power of attorney proxy role to the third heir. The third heir has therefore the right to act on behalf of the estate alone.
+
+<p align="center">
+    <img width="500" alt="oed_authz_scenario_3_full_delegation" src="https://github.com/user-attachments/assets/1d526653-2455-4eda-a414-25c38319e1cb" />
+</p>
 
 ```jsonc
 // POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
@@ -174,6 +192,10 @@ Response:
 
 #### Scenario 4
 In this scenario there are three heirs to the estate. Probate certificate has been issued to all three heirs. Heir one has given the power of attorney proxy role to the third heir, but the second heir has not. The third heir can act on behalf of the first heir, an therefore on behalf of the estate together with the second heir.
+
+<p align="center">
+    <img width="500" alt="oed_authz_scenario_4_partial_delegation" src="https://github.com/user-attachments/assets/103cec01-9038-48d8-bffb-5fb17b9b28ed" />
+</p>
 
 ```jsonc
 // POST https://digitaltdodsbo.tt02.altinn.no/api/v1/authorization/roles/search
