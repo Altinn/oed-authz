@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Altinn.Dd.InternalEvents;
+using Microsoft.EntityFrameworkCore;
 using oed_authz.Infrastructure.Database;
 using oed_authz.Infrastructure.Database.Model;
 using oed_authz.Services;
@@ -14,7 +15,7 @@ public class DatabaseFixture : IAsyncLifetime
             .Build();
 
     public readonly string PreSeededEstateSsn = "12345678901";
-    public readonly string PreSeededEventType = Events.Oed.CaseStatusUpdateValidated;
+    public readonly string PreSeededEventType = EventType.CaseStatusUpdateValidated;
 
     public string ConnectionString => _container.GetConnectionString();
 

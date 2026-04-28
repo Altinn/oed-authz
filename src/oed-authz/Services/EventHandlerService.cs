@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Altinn.Dd.InternalEvents;
 using Altinn.Dd.InternalEvents.Estate;
 using oed_authz.Infrastructure.Database;
 using oed_authz.Infrastructure.Database.Model;
@@ -21,7 +22,7 @@ public class AltinnEventHandlerService(
     {
         return cloudEvent.Type switch
         {
-            Events.Oed.CaseStatusUpdateValidated => HandleEstateInstanceCreatedOrUpdated(cloudEvent),
+            EventType.CaseStatusUpdateValidated => HandleEstateInstanceCreatedOrUpdated(cloudEvent),
             Events.Platform.ValidateSubscription => Task.CompletedTask,
             _ => throw new ArgumentException("Unknown event type")
         };
@@ -191,11 +192,6 @@ public class AltinnEventHandlerService(
 
 public static class Events
 {
-    public static class Oed
-    {
-        public const string CaseStatusUpdateValidated = "no.altinn.events.digitalt-dodsbo.v1.case-status-update-validated";
-    }
-
     public static class Platform
     {
         public const string ValidateSubscription = "platform.events.validatesubscription";

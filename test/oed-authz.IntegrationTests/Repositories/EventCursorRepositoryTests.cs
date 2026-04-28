@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using Altinn.Dd.InternalEvents;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using oed_authz.Infrastructure.Database;
@@ -25,7 +26,7 @@ public class EventCursorRepositoryTests(DatabaseFixture databaseFixture)
         var cursor = new EventCursor
         {
             EstateSsn = "12345678901",
-            EventType = Events.Oed.CaseStatusUpdateValidated,
+            EventType = EventType.CaseStatusUpdateValidated,
             LastTimestampProcessed = new DateTimeOffset(2025, 8, 1, 19, 0, 0, 0, TimeSpan.Zero)
         };
 

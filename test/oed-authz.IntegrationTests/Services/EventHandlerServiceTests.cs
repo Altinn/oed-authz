@@ -1,4 +1,5 @@
-﻿using Altinn.Dd.InternalEvents.Estate;
+﻿using Altinn.Dd.InternalEvents;
+using Altinn.Dd.InternalEvents.Estate;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +80,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = DateTimeOffset.Now,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             //Subject = $"person/{estateSsn}",
             Subject = estateSsn,
             Data = JsonSerializer.Serialize(eventRoleAssignments)
@@ -158,7 +159,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = DateTimeOffset.Now,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(eventRoleAssignments)
         };
@@ -203,7 +204,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = timestamp,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(roleAssignments),
         };
@@ -248,7 +249,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var arrangeCloudEvent = new CloudEvent
         {
             Time = timestamp.Subtract(TimeSpan.FromSeconds(1)),
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(arrangeRoleAssignments),
         };
@@ -282,7 +283,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = timestamp,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(roleAssignments),
         };
@@ -323,7 +324,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var arrangeCloudEvent = new CloudEvent
         {
             Time = timestamp.Subtract(TimeSpan.FromSeconds(1)),
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(arrangeRoleAssignments),
         };
@@ -357,7 +358,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = timestamp,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(roleAssignments),
         };
@@ -406,7 +407,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = timestamp,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(roleAssignments),
         };
@@ -457,7 +458,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var latestEvent = new CloudEvent
         {
             Time = new DateTimeOffset(2025, 8, 1, 18, 0, 0, TimeSpan.Zero), // 2025-08-01T18:00:00+00
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(latestRoleAssignments),
         };
@@ -487,7 +488,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var outOfOrderEvent = new CloudEvent
         {
             Time = new DateTimeOffset(2025, 8, 1, 17, 0, 0, TimeSpan.Zero), // 2025-08-01T17:00:00+00
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(outOfOrderRoleAssignments),
         };
@@ -535,7 +536,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = timestamp,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(roleAssignments),
         };
@@ -565,7 +566,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var anotherEvent = new CloudEvent
         {
             Time = timestamp, // Same timestamp as the previus event
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             Subject = $"person/{estateSsn}",
             Data = JsonSerializer.Serialize(anotherRoleAssignments),
         };
@@ -644,7 +645,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = DateTimeOffset.Now,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             //Subject = $"person/{estateSsn}",
             Subject = estateSsn,
             Data = JsonSerializer.Serialize(eventRoleAssignments)
@@ -706,7 +707,7 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
         var cloudEvent = new CloudEvent
         {
             Time = DateTimeOffset.Now,
-            Type = Events.Oed.CaseStatusUpdateValidated,
+            Type = EventType.CaseStatusUpdateValidated,
             //Subject = $"person/{estateSsn}",
             Subject = estateSsn,
             Data = JsonSerializer.Serialize(eventRoleAssignments)
