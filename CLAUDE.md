@@ -112,6 +112,19 @@ Local development connection strings (from `appsettings.Development.json`):
 
 Optional: set `APPLICATIONINSIGHTS_CONNECTION_STRING` env var to enable telemetry.
 
+## Claude Automations
+
+Project-level `.claude/` directory configures automated behaviors:
+- **PostToolUse hook**: `dotnet format` runs automatically after every `.cs` file edit — no need to format manually.
+- **PreToolUse hook**: Editing `appsettings.Development.json` is blocked; make those changes manually.
+- **Subagents**: `migration-reviewer` (safety-checks EF Core migrations), `security-reviewer` (auth/SSN/scope checks).
+- **Skill**: `/create-migration` — scaffolds, reviews, and optionally applies a new EF Core migration.
+
+## Code Style
+
+- Uses C# 14 `extension` member syntax (not `static` class extension methods) — see `EstateCaseUpdatedEventExtensions.cs` for an example.
+- Nullable reference types enabled; interfaces live flat in `src/oed-authz/Interfaces/`, services in `src/oed-authz/Services/`.
+
 ## Important Constraints
 
 - Integration tests require Docker (Testcontainers spins up a real PostgreSQL container).
