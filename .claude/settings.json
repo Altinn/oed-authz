@@ -1,0 +1,30 @@
+{
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); print(json.dumps({'decision':'block','reason':'Editing dev secrets/config requires a manual edit'}) if 'appsettings.Development.json' in f or f.endswith('.env') else json.dumps({'decision':'allow'}))\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys,subprocess; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); subprocess.run(['dotnet','format','oed-authz.sln','--include',f],capture_output=True,cwd='/mnt/c/Sourcecode/altinn/oed-authz') if f.endswith('.cs') else None\""
+          }
+        ]
+      }
+    ]
+  }
+}
