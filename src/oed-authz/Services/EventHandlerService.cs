@@ -57,7 +57,8 @@ public class AltinnEventHandlerService(
 
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
-        if (eventData.CaseStatus == CaseStatus.Feilfort)
+        if (eventData.IsFeilfort() || 
+            eventData.HasIncompleteRoleInformation())
         {
             await RemoveAllRoleAssignmentsForEstate(estateSsn, daEvent.Id);
         }
