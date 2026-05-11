@@ -22,7 +22,8 @@ public class AltinnEventHandlerService(
     {
         return cloudEvent.Type switch
         {
-            EventType.CaseStatusUpdateValidated => HandleEstateInstanceCreatedOrUpdated(cloudEvent),
+            EventType.CaseStatusUpdateValidated or EventType.CaseStatusManuallySynced =>
+                HandleEstateInstanceCreatedOrUpdated(cloudEvent),
             Events.Platform.ValidateSubscription => Task.CompletedTask,
             _ => throw new ArgumentException("Unknown event type")
         };

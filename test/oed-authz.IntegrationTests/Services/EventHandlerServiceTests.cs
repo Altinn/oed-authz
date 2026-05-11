@@ -735,6 +735,228 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             ra.RecipientSsn == "99999999993");
     }
 
+    [Fact]
+    public async Task HandleEvent_CaseStatusManuallySynced_ShouldCreateRolesAccordingToEvent()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+
+        var eventRoleAssignments = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999991",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                },
+                new PersonHeirRole
+                {
+                    Nin = "99999999992",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.Now,
+            Type = EventType.CaseStatusManuallySynced,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(eventRoleAssignments)
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        var roleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        roleAssignments.Should().HaveCount(2);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999991" &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == "99999999992" &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+    }
+
+    [Fact]
+    public async Task HandleEvent_CaseStatusManuallySynced_HasIndependentEventCursorFromCaseStatusUpdateValidated()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+        var laterTimestamp = new DateTimeOffset(2025, 9, 1, 12, 0, 0, TimeSpan.Zero);
+        var earlierTimestamp = laterTimestamp.Subtract(TimeSpan.FromHours(1));
+
+        var eventData = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999991",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        // Send a CaseStatusUpdateValidated event at the later timestamp
+        var validatedEvent = new CloudEvent
+        {
+            Time = laterTimestamp,
+            Type = EventType.CaseStatusUpdateValidated,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(eventData)
+        };
+
+        await _sut.HandleEvent(validatedEvent);
+
+        // Act: send a CaseStatusManuallySynced event at an earlier timestamp for the same estate.
+        // This would be discarded if it shared the CaseStatusUpdateValidated cursor, but it has its own.
+        var manuallySyncedEventData = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999992",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        var manuallySyncedEvent = new CloudEvent
+        {
+            Time = earlierTimestamp,
+            Type = EventType.CaseStatusManuallySynced,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(manuallySyncedEventData)
+        };
+
+        await _sut.HandleEvent(manuallySyncedEvent);
+
+        // Assert: both events were processed — two separate cursors exist for this estate
+        var cursors = _dbContext.Set<EventCursor>()
+            .Where(c => c.EstateSsn == estateSsn)
+            .ToList();
+
+        cursors.Should().HaveCount(2);
+        cursors.Should().ContainSingle(c =>
+            c.EventType == EventType.CaseStatusUpdateValidated &&
+            c.LastTimestampProcessed == laterTimestamp);
+        cursors.Should().ContainSingle(c =>
+            c.EventType == EventType.CaseStatusManuallySynced &&
+            c.LastTimestampProcessed == earlierTimestamp);
+
+        // The CaseStatusManuallySynced event was processed (not discarded), which means it
+        // reconciled roles based on its own data and replaced the heir from the earlier event.
+        // If the cursors were shared, the manually-synced event would have been discarded
+        // (its timestamp is earlier), leaving 99999999991 as the only heir.
+        var roleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        roleAssignments.Should().HaveCount(1);
+        roleAssignments.Should().ContainSingle(ra => ra.RecipientSsn == "99999999992");
+    }
+
+    [Fact]
+    public async Task HandleEvent_CaseStatusManuallySynced_OutOfOrderEvents_ShouldBeDiscarded()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+        var daCaseId = Guid.NewGuid().ToString();
+
+        var firstEventData = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = "99999999991",
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        var firstEvent = new CloudEvent
+        {
+            Time = new DateTimeOffset(2025, 9, 1, 18, 0, 0, TimeSpan.Zero),
+            Type = EventType.CaseStatusManuallySynced,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(firstEventData),
+        };
+
+        await _sut.HandleEvent(firstEvent);
+
+        // Verify preconditions
+        var arrangedRoleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        arrangedRoleAssignments.Should().HaveCount(1);
+
+        // Act: send an older CaseStatusManuallySynced event — should be discarded
+        var outOfOrderEventData = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = daCaseId,
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = []
+        };
+
+        var outOfOrderEvent = new CloudEvent
+        {
+            Time = new DateTimeOffset(2025, 9, 1, 17, 0, 0, TimeSpan.Zero),
+            Type = EventType.CaseStatusManuallySynced,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(outOfOrderEventData),
+        };
+
+        await _sut.HandleEvent(outOfOrderEvent);
+
+        // Assert: roles unchanged — out-of-order event was discarded
+        var resultRoleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        resultRoleAssignments.Should().HaveCount(1);
+        resultRoleAssignments.Should().OnlyContain(rra =>
+            rra.RoleCode == Constants.FormuesfullmaktRoleCode &&
+            arrangedRoleAssignments.Any(ara => ara.Id == rra.Id));
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
     public Task DisposeAsync() => Task.CompletedTask;
 }
