@@ -54,7 +54,7 @@ namespace oed_authz.UnitTests.Controllers
 
             // Assert
             mvcResult.Result.Should().BeOfType<OkObjectResult>();
-            AssertLogCount(LogLevel.Information, expectedCalls: 0);
+            AssertPipDebugLogCount(expectedCalls: 0);
         }
 
         [Theory]
@@ -72,18 +72,41 @@ namespace oed_authz.UnitTests.Controllers
 
             // Assert
             mvcResult.Result.Should().BeOfType<OkObjectResult>();
-            AssertLogCount(LogLevel.Information, expectedCalls: 1);
+            AssertPipDebugLogCount(expectedCalls: 1);
         }
 
-        private void AssertLogCount(LogLevel level, int expectedCalls)
+        private void AssertPipDebugLogCount(int expectedCalls)
         {
             // ILogger.LogInformation is an extension method; FakeItEasy can only intercept
-            // the underlying Log<TState>() call.
+            // the underlying Log<TState>() call. Match on the message template stored in
+            // the structured-log state so unrelated logging in this controller won't trip
+            // the assertion.
+            const string messageTemplate = "PIP request debug. Estate: {e}, Recipient: {r}, Roles: {roles}";
+
             A.CallTo(_fakeLogger)
                 .Where(call =>
                     call.Method.Name == nameof(ILogger.Log) &&
-                    call.GetArgument<LogLevel>(0) == level)
+                    call.GetArgument<LogLevel>(0) == LogLevel.Information &&
+                    GetOriginalFormat(call.GetArgument<object>(2)) == messageTemplate)
                 .MustHaveHappened(expectedCalls, Times.Exactly);
+        }
+
+        private static string? GetOriginalFormat(object? state)
+        {
+            if (state is not IEnumerable<KeyValuePair<string, object?>> kvps)
+            {
+                return null;
+            }
+
+            foreach (var kvp in kvps)
+            {
+                if (kvp.Key == "{OriginalFormat}")
+                {
+                    return kvp.Value as string;
+                }
+            }
+
+            return null;
         }
     }
 }
