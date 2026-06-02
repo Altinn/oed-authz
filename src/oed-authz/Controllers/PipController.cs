@@ -64,6 +64,9 @@ public class PipController : Controller
             RoleAssignments = pipRoleAssignmentsDto
         };
 
+        _logger.LogInformation("EnvironmentName1: {env}", _environment.EnvironmentName);
+        Console.WriteLine("EnvironmentName2: {0}", _environment.EnvironmentName);
+
         if (!_environment.IsProduction())
         {
             _logger.LogInformation("PIP request debug. Estate: {e}, Recipient: {r}, Roles: {roles}", 
