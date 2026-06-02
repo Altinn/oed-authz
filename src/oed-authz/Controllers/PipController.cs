@@ -6,14 +6,19 @@ using oed_authz.Models.Dto;
 using oed_authz.Settings;
 
 namespace oed_authz.Controllers;
+
 [ApiController]
 public class PipController : Controller
 {
     private readonly IPolicyInformationPointService _pipService;
+    private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<PipController> _logger;
 
-    public PipController(IPolicyInformationPointService pipService)
+    public PipController(IPolicyInformationPointService pipService, IWebHostEnvironment environment, ILogger<PipController> logger)
     {
         _pipService = pipService;
+        _environment = environment;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -23,7 +28,7 @@ public class PipController : Controller
     {
         try
         {
-            return Ok( await HandleRequest(pipRequestDto));
+            return Ok(await HandleRequest(pipRequestDto));
         }
         catch (ArgumentException ex)
         {
@@ -54,10 +59,16 @@ public class PipController : Controller
                 Created = assignment.Created
             }).ToList();
 
-        var pipResponseDto = new PipResponseDto()
+        var pipResponseDto = new PipResponseDto
         {
             RoleAssignments = pipRoleAssignmentsDto
         };
+
+        if (!_environment.IsProduction())
+        {
+            _logger.LogInformation("PIP request debug. Estate: {e}, Recipient: {r}, Roles: {roles}", 
+                pipRequest.EstateSsn, pipRequest.RecipientSsn, string.Join("|", pipRoleAssignmentsDto.Select(r => r.Role)));
+        }
 
         return pipResponseDto;
     }
