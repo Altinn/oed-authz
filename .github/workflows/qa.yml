@@ -32,11 +32,12 @@ jobs:
       run: dotnet build -c Release --no-restore
 
     # Altinn.Dd.Tests.SonarGate archives the snapshot to the oedqa blob container (auth via SAS
-    # secret) and builds the SWA bundle locally under QaTests/TestResults/swa-bundle/.
+    # secret) and builds the SWA bundle locally under TestResults/swa-bundle/ inside the test
+    # project folder.
     - name: Run QA tests
       env:
         AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
-      run: dotnet test QaTests --no-restore --verbosity normal
+      run: dotnet test test/oed-authz.QaTests --no-restore --verbosity normal
 
     # Ship the bundle to Azure Static Web Apps. Token is scoped to this step only.
     - name: Deploy dashboard to SWA
@@ -45,6 +46,6 @@ jobs:
       with:
         azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         action: upload
-        app_location: QaTests/TestResults/swa-bundle
+        app_location: test/oed-authz.QaTests/TestResults/swa-bundle
         skip_app_build: true
         output_location: ''

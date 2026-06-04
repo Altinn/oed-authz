@@ -2,13 +2,13 @@ using Altinn.Dd.Tests.SonarGate;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace QaTests;
+namespace oed_authz.QaTests;
 
 // Opt-in SonarQube quality-gate test for oed-authz. The actual runner lives in the
 // Altinn.Dd.Tests.SonarGate package — this file is just the option blob. See
 // https://altinn.studio/repos/digdir/dd-qa for the package source.
 //
-// Run with:  $env:QATESTS = "1"; dotnet test ./QaTests/QaTests.csproj
+// Run with:  $env:QATESTS = "1"; dotnet test ./test/oed-authz.QaTests
 public class SonarGateTests(ITestOutputHelper output)
 {
     [SkippableFact, Trait("Category", "qa")]
@@ -26,7 +26,7 @@ public class SonarGateTests(ITestOutputHelper output)
                 "[xunit.*]*",
                 "[oed-authz.UnitTests]*",
                 "[oed-authz.IntegrationTests]*",
-                "[QaTests]*",
+                "[oed-authz.QaTests]*",
             ],
         },
     }, output);
