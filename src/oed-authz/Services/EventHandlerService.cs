@@ -24,9 +24,19 @@ public class AltinnEventHandlerService(
         {
             EventType.CaseStatusUpdateValidated or EventType.CaseStatusManuallySynced =>
                 HandleEstateInstanceCreatedOrUpdated(cloudEvent),
+            EventType.FregProtectedAddressUpdate => 
+                HandleProtectedAddressUpdate(cloudEvent),
             Events.Platform.ValidateSubscription => Task.CompletedTask,
             _ => throw new ArgumentException("Unknown event type")
         };
+    }
+
+    private async Task HandleProtectedAddressUpdate(CloudEvent fregEvent)
+    {
+        logger.LogInformation("Placeholder for handling protected address update event {Id} of type {EventType} for subject {Subject}",
+            fregEvent.Id, 
+            fregEvent.Type, 
+            fregEvent.Subject[..Math.Min(fregEvent.Subject.Length, 6)]);
     }
 
     private async Task HandleEstateInstanceCreatedOrUpdated(CloudEvent daEvent)
