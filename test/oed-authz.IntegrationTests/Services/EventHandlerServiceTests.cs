@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using oed_authz.Infrastructure.Database;
 using oed_authz.Infrastructure.Database.Model;
 using oed_authz.Models;
-using oed_authz.Models.Dto;
 using oed_authz.Repositories;
 using oed_authz.Services;
 using oed_authz.Settings;
@@ -31,12 +30,10 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
 
         var eventCursorRepo = new EventCursorRepository(_dbContext);
 
-        var roleAssignmentsRepository = new RoleAssignmentsRepository(
-            _dbContext,
-            A.Fake<ILogger<RoleAssignmentsRepository>>());
+        var roleAssignmentsRepository = new RoleAssignmentsRepository(_dbContext);
 
         var proxyManagementService =
-            new ProxyManagementService(roleAssignmentsRepository, A.Fake<ILogger<ProxyManagementService>>());
+            new ProxyManagementService(roleAssignmentsRepository);
 
         _sut = new AltinnEventHandlerService(
             _dbContext,

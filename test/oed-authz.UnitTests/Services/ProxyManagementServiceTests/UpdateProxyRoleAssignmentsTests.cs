@@ -33,7 +33,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -62,7 +62,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -91,7 +91,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -121,7 +121,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -151,7 +151,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -187,7 +187,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -223,7 +223,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -261,7 +261,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -296,7 +296,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");
@@ -327,7 +327,7 @@ public class UpdateProxyRoleAssignmentsTests
                 });
             });
 
-        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository, _fakeLogger);
+        var sut = new ProxyManagementService(_fakeRoleAssignmentRepository);
 
         // Act
         await sut.UpdateProxyRoleAssigments("11111111111");

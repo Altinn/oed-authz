@@ -8,14 +8,10 @@ namespace oed_authz.Services;
 public class ProxyManagementService : IProxyManagementService
 {
     private readonly IRoleAssignmentsRepository _oedRoleRepositoryService;
-    private readonly ILogger<ProxyManagementService> _logger;
 
-    public ProxyManagementService(
-        IRoleAssignmentsRepository oedRoleRepositoryService,
-        ILogger<ProxyManagementService> logger)
+    public ProxyManagementService(IRoleAssignmentsRepository oedRoleRepositoryService)
     {
         _oedRoleRepositoryService = oedRoleRepositoryService;
-        _logger = logger;
     }
 
     public async Task Add(ProxyManagementRequest proxyManagementRequest)

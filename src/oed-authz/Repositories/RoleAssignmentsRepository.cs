@@ -2,21 +2,16 @@
 using oed_authz.Infrastructure.Database;
 using oed_authz.Interfaces;
 using oed_authz.Models;
-using System.Text.Json;
 
 namespace oed_authz.Repositories
 {
     public class RoleAssignmentsRepository : IRoleAssignmentsRepository
     {
         private readonly OedAuthzDbContext _dbContext;
-        private readonly ILogger<RoleAssignmentsRepository> _logger;
 
-        public RoleAssignmentsRepository(
-            OedAuthzDbContext dbContext, 
-            ILogger<RoleAssignmentsRepository> logger)
+        public RoleAssignmentsRepository(OedAuthzDbContext dbContext)
         {
             _dbContext = dbContext;
-            _logger = logger;
         }
 
         public async Task AddRoleAssignment(RoleAssignment roleAssignment)

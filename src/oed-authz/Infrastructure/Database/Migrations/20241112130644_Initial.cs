@@ -18,6 +18,7 @@ namespace oed_authz.Infrastructure.Database.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // no-op for initial migration
         }
     }
 }

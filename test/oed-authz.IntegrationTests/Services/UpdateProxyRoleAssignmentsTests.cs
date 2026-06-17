@@ -1,7 +1,6 @@
 ﻿using FakeItEasy;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using oed_authz.Infrastructure.Database;
 using oed_authz.Models;
 using oed_authz.Repositories;
@@ -9,7 +8,6 @@ using oed_authz.Services;
 using oed_authz.Settings;
 
 namespace oed_authz.IntegrationTests.Services;
-
 
 public class UpdateProxyRoleAssignmentsTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
@@ -25,11 +23,9 @@ public class UpdateProxyRoleAssignmentsTests : IClassFixture<DatabaseFixture>, I
                 .UseNpgsql(databaseFixture.ConnectionString)
                 .Options);
         
-        var roleAssignmentsRepository = new RoleAssignmentsRepository(
-            _dbContext,
-            A.Fake<ILogger<RoleAssignmentsRepository>>());
+        var roleAssignmentsRepository = new RoleAssignmentsRepository(_dbContext);
 
-        _sut = new ProxyManagementService(roleAssignmentsRepository, A.Fake<ILogger<ProxyManagementService>>());
+        _sut = new ProxyManagementService(roleAssignmentsRepository);
     }
 
     [Fact]
