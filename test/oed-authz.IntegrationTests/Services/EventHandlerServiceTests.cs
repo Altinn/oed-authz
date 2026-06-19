@@ -954,6 +954,234 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             arrangedRoleAssignments.Any(ara => ara.Id == rra.Id));
     }
 
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_ShouldWipeEveryEstateThePersonIsPartOf_AndLeaveOthersUntouched()
+    {
+        // Arrange
+        var protectedPersonSsn = _databaseFixture.NextSsn;
+        var otherHeirSsn = _databaseFixture.NextSsn;
+        var estateA = _databaseFixture.NextSsn;
+        var estateB = _databaseFixture.NextSsn;
+        var unaffectedEstate = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            // Estate A: protected person is a recipient, alongside another heir
+            new RoleAssignment
+            {
+                EstateSsn = estateA,
+                RecipientSsn = protectedPersonSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateA,
+                RecipientSsn = otherHeirSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            },
+            // Estate B: protected person appears only as the HeirSsn on a proxy assignment
+            new RoleAssignment
+            {
+                EstateSsn = estateB,
+                RecipientSsn = otherHeirSsn,
+                HeirSsn = protectedPersonSsn,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            },
+            // Unaffected estate: protected person not involved at all
+            new RoleAssignment
+            {
+                EstateSsn = unaffectedEstate,
+                RecipientSsn = otherHeirSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        // Freg events arrive on the wire as { "nin": "..." }
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedPersonSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedPersonSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - estates A and B are wiped entirely (every heir, not just the protected person)
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateA)
+            .ToList()
+            .Should().BeEmpty();
+
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateB)
+            .ToList()
+            .Should().BeEmpty();
+
+        // The unrelated estate is left untouched
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == unaffectedEstate)
+            .ToList()
+            .Should().ContainSingle(ra => ra.RecipientSsn == otherHeirSsn);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_ShouldWipeEntireEstate_IncludingAutoManagedCollectiveProxy_CreatedByEstateEvent()
+    {
+        // Arrange - build the estate's role assignments through the real estate-event path,
+        // so the data shape (court roles + the auto-managed collective proxy) matches production.
+        var estateSsn = _databaseFixture.NextSsn;
+        var protectedHeirSsn = _databaseFixture.NextSsn; // probate role -> auto-assigned collective proxy
+        var otherHeirSsn = _databaseFixture.NextSsn;      // formuesfullmakt role
+
+        var estateEventData = new EstateCaseUpdatedEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = protectedHeirSsn,
+                    Role = Constants.ProbateRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                },
+                new PersonHeirRole
+                {
+                    Nin = otherHeirSsn,
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        var estateEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.CaseStatusUpdateValidated,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(estateEventData)
+        };
+
+        await _sut.HandleEvent(estateEvent);
+
+        // Precondition: the estate event produced both court roles plus an auto-managed collective proxy
+        var seededAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        seededAssignments.Should().Contain(ra =>
+            ra.RecipientSsn == protectedHeirSsn && ra.RoleCode == Constants.ProbateRoleCode);
+        seededAssignments.Should().Contain(ra =>
+            ra.RecipientSsn == otherHeirSsn && ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+        seededAssignments.Should().Contain(ra =>
+            ra.RoleCode == Constants.CollectiveProxyRoleCode);
+
+        // Act: protected-address update for the probate heir
+        var fregEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedHeirSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedHeirSsn })
+        };
+
+        await _sut.HandleEvent(fregEvent);
+
+        // Assert: the entire estate is wiped - court roles, the other heir, and the
+        // auto-managed collective proxy all gone.
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleEvent_EstateEventAfterFregWipe_ShouldReGrantCourtRoles_DocumentingThatWipeIsNotDurable()
+    {
+        // This test documents (it does NOT endorse) current behaviour: a freg protected-address
+        // wipe writes no EventCursor, so a later estate-update event is processed normally and
+        // re-grants the roles the wipe removed. If protected-address removal is meant to be
+        // durable, this test should start failing - which is the signal we want.
+        var estateSsn = _databaseFixture.NextSsn;
+        var heirSsn = _databaseFixture.NextSsn;
+        var firstTimestamp = new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero);
+        var laterTimestamp = firstTimestamp.AddHours(2);
+
+        EstateCaseUpdatedEvent BuildEstateEventData() => new()
+        {
+            Time = DateTimeOffset.UtcNow,
+            ProbateDeadline = DateTimeOffset.UtcNow.AddDays(60),
+            CaseNumber = "abc123",
+            DistrictCourtName = "Oslo tingrett",
+            CaseId = Guid.NewGuid().ToString(),
+            CaseStatus = CaseStatus.Mottatt,
+            HeirRolesV2 = [
+                new PersonHeirRole
+                {
+                    Nin = heirSsn,
+                    Role = Constants.FormuesfullmaktRoleCode,
+                    Relation = HeirRoleRelation.Barn,
+                }
+            ]
+        };
+
+        // Arrange: estate event grants the heir a court role
+        var firstEstateEvent = new CloudEvent
+        {
+            Time = firstTimestamp,
+            Type = EventType.CaseStatusUpdateValidated,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(BuildEstateEventData())
+        };
+
+        await _sut.HandleEvent(firstEstateEvent);
+
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().ContainSingle(ra =>
+                ra.RecipientSsn == heirSsn && ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+
+        // Freg protected-address update wipes the estate (and advances no estate EventCursor)
+        var fregEvent = new CloudEvent
+        {
+            Time = firstTimestamp.AddHours(1),
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = heirSsn,
+            Data = JsonSerializer.Serialize(new { nin = heirSsn })
+        };
+
+        await _sut.HandleEvent(fregEvent);
+
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().BeEmpty();
+
+        // Act: a later estate sync for the same estate
+        var secondEstateEvent = new CloudEvent
+        {
+            Time = laterTimestamp,
+            Type = EventType.CaseStatusUpdateValidated,
+            Subject = estateSsn,
+            Data = JsonSerializer.Serialize(BuildEstateEventData())
+        };
+
+        await _sut.HandleEvent(secondEstateEvent);
+
+        // Assert: the court role is back - the freg wipe was not durable against a later court sync.
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().ContainSingle(ra =>
+                ra.RecipientSsn == heirSsn && ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
     public Task DisposeAsync() => Task.CompletedTask;
 }

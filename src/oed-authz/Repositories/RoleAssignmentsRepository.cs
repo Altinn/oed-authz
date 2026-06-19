@@ -38,6 +38,14 @@ namespace oed_authz.Repositories
                 .ToListAsync();
         }
 
+        public Task<List<RoleAssignment>> GetAllRoleAssignmentsForPerson(string ssn)
+        {
+            return _dbContext.RoleAssignments
+                .Where(ra => ra.HeirSsn == ssn || ra.RecipientSsn == ssn)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public Task RemoveRoleAssignment(RoleAssignment roleAssignment)
         {
             return _dbContext.RoleAssignments

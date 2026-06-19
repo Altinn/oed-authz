@@ -33,10 +33,29 @@ public class AltinnEventHandlerService(
 
     private async Task HandleProtectedAddressUpdate(CloudEvent fregEvent)
     {
-        logger.LogInformation("Placeholder for handling protected address update event {Id} of type {EventType} for subject {Subject}",
-            fregEvent.Id, 
-            fregEvent.Type, 
-            fregEvent.Subject[..Math.Min(fregEvent.Subject.Length, 6)]);
+        ThrowIfEmptyData(fregEvent);
+
+        logger.LogInformation("Handling protected address update event {Id} from freg", fregEvent.Id);
+
+        var eventData = JsonSerializer.Deserialize<FregProtectedAddressUpdateEvent>(fregEvent.Data.ToString()!);
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+        var roleAssignmentsForPerson = await oedRoleRepositoryService.GetAllRoleAssignmentsForPerson(eventData!.Nin);
+     
+        var estatesPersonIsPartOf = roleAssignmentsForPerson
+            .Select(x => x.EstateSsn)
+            .Distinct();
+        
+        foreach (var estateSsn in estatesPersonIsPartOf)
+        {
+            logger.LogInformation("Removing all role assignments for estate {EstateSsn} due to protected address update for person with Nin {Nin}",
+                estateSsn, SsnUtils.TruncateSsn(eventData.Nin));
+
+            await RemoveAllRoleAssignmentsForEstate(estateSsn, fregEvent.Id);
+        }
+
+        await transaction.CommitAsync();
     }
 
     private async Task HandleEstateInstanceCreatedOrUpdated(CloudEvent daEvent)
@@ -57,11 +76,7 @@ public class AltinnEventHandlerService(
             return;
         }
 
-        if (daEvent.Data == null)
-        {
-            logger.LogError("Empty data in event: {CloudEvent}", JsonSerializer.Serialize(daEvent));
-            throw new ArgumentNullException(nameof(daEvent.Data));
-        }
+        ThrowIfEmptyData(daEvent);
 
         var eventData = JsonSerializer.Deserialize<EstateCaseUpdatedEvent>(daEvent.Data.ToString()!)!;
         logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventData.CaseId);
@@ -172,6 +187,15 @@ public class AltinnEventHandlerService(
         foreach (var roleAssignment in assignmentsToRemove)
         {
             await oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
+        }
+    }
+
+    private void ThrowIfEmptyData(CloudEvent cloudEvent)
+    {
+        if (cloudEvent.Data == null)
+        {
+            logger.LogError("Empty data in event {Id} of type {EventType}", cloudEvent.Id, cloudEvent.Type);
+            throw new ArgumentNullException(nameof(cloudEvent), "CloudEvent data is null");
         }
     }
 
