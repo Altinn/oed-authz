@@ -12,7 +12,7 @@ public static class SsnUtils
     {
         if (daEvent.Subject == null)
         {
-            throw new ArgumentNullException(nameof(daEvent), "Missing daEvent.Subject");
+            throw new ArgumentNullException(nameof(daEvent.Subject));
         }
 
         if (IsValidSsn(daEvent.Subject))
@@ -27,15 +27,5 @@ public static class SsnUtils
         }
 
         return subject[1];
-    }
-
-    public static string TruncateSsn(string ssn)
-    {
-        if (ssn.Length < 6)
-        {
-            return ssn;
-        }
-     
-        return ssn[..6];
     }
 }
