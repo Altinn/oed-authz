@@ -1,19 +1,19 @@
 ﻿using oed_authz.Models;
 
 namespace oed_authz.Utils;
+
 public static class SsnUtils
 {
     public static bool IsValidSsn(string estateSsnOnly)
     {
-        return estateSsnOnly.Length == 11 && estateSsnOnly.All(t => t is >= '0' and <= '9');
+        return estateSsnOnly is not null
+            && estateSsnOnly.Length == 11 
+            && estateSsnOnly.All(Char.IsAsciiDigit);
     }
 
     public static string GetEstateSsnFromCloudEvent(CloudEvent daEvent)
     {
-        if (daEvent.Subject == null)
-        {
-            throw new ArgumentNullException(nameof(daEvent), "Missing daEvent.Subject");
-        }
+        ArgumentException.ThrowIfNullOrEmpty(daEvent.Subject);
 
         if (IsValidSsn(daEvent.Subject))
         {
@@ -35,7 +35,7 @@ public static class SsnUtils
         {
             return ssn;
         }
-     
+
         return ssn[..6];
     }
 }
