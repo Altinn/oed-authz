@@ -1669,6 +1669,62 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             .Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenPersonIsBothHeirAndProxyRecipientInSameEstate_ShouldWipeEstate_WithoutError()
+    {
+        // The protected person is a probate heir AND has received an individual proxy from a
+        // co-heir in the SAME estate (a supported state - see GetEligibleCollectiveProxyRecipients).
+        // Because they are an heir, the whole estate must be wiped, and the operation must not
+        // depend on the order the person's rows happen to come back from the database.
+        var estateSsn = _databaseFixture.NextSsn;
+        var protectedHeirSsn = _databaseFixture.NextSsn;
+        var coHeirSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            // Court role for the protected person (this row drives the full-estate wipe).
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = protectedHeirSsn,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = coHeirSsn,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            // ...and the protected person is also a proxy recipient from the co-heir.
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = protectedHeirSsn,
+                HeirSsn = coHeirSsn,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedHeirSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedHeirSsn })
+        };
+
+        // Act
+        var act = async () => await _sut.HandleEvent(cloudEvent);
+
+        // Assert - must not throw, and the estate must be fully wiped.
+        await act.Should().NotThrowAsync();
+
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().BeEmpty();
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
     public Task DisposeAsync() => Task.CompletedTask;
 }

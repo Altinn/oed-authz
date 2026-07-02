@@ -46,16 +46,27 @@ public class AltinnEventHandlerService(
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-        var roleAssignmentsForPerson = await oedRoleRepositoryService.GetAllRoleAssignmentsForPerson(eventData.Nin);
+        var nin = eventData.Nin;
+        var roleAssignmentsForPerson = await oedRoleRepositoryService.GetAllRoleAssignmentsForPerson(nin);
 
-        foreach (RoleAssignment ra in roleAssignmentsForPerson)
+        // Handle each estate the person is part of
+        foreach (var estateGroup in roleAssignmentsForPerson.GroupBy(ra => ra.EstateSsn))
         {
-            // Affected nin is the recipient of an individual proxy: revoke only that delegation.
-            // Removing it cascades any collective proxy the person held because of it.
-            if (ra.RecipientSsn == eventData.Nin && ra.HeirSsn is not null)
+            var estateSsn = estateGroup.Key;
+            var rows = estateGroup.ToList();
+
+            // Heir (holds a court role, or delegated a proxy) -> wipe the whole estate.
+            if (IsHeir(nin, rows))
+            {
+                await RemoveAllRoleAssignmentsForEstate(estateSsn, fregEvent.Id);
+                continue;
+            }
+
+            // Proxy recipient only -> revoke their individual proxy delegation(s).
+            foreach (var ra in rows.Where(r => r.RecipientSsn == nin && r.HeirSsn is not null))
             {
                 logger.LogInformation("Removing individual proxy role for {Nin} in {EstateSsn}",
-                    SsnUtils.TruncateSsn(eventData.Nin), ra.EstateSsn);
+                    SsnUtils.TruncateSsn(nin), estateSsn);
 
                 await proxyManagementService.Remove(new()
                 {
@@ -68,24 +79,17 @@ public class AltinnEventHandlerService(
                         RoleCode = ra.RoleCode
                     }
                 });
-                continue;
             }
-
-            // Affected nin is the recipient of the auto-managed collective proxy. A collective
-            // proxy always derives from one or more individual proxies, which are handled above -
-            // their removal cascades (via UpdateProxyRoleAssigments) into revoking this collective
-            // proxy. We only skip here so the stale snapshot row does not fall through to the
-            // estate wipe below; the person is a proxy holder, not an heir.
-            if (ra.RecipientSsn == eventData.Nin && ra.RoleCode == Constants.CollectiveProxyRoleCode)
-            {
-                continue;
-            }
-
-            logger.LogInformation("Removing all role assignments for estate {EstateSsn}", ra.EstateSsn);
-            await RemoveAllRoleAssignmentsForEstate(ra.EstateSsn, fregEvent.Id);
         }
 
         await transaction.CommitAsync();
+    }
+
+    private static bool IsHeir(string nin, IEnumerable<RoleAssignment> rows)
+    {
+        return rows.Any(ra => 
+            (ra.RecipientSsn == nin && ra.HeirSsn is null && ra.RoleCode != Constants.CollectiveProxyRoleCode)
+            || ra.HeirSsn == nin);
     }
 
     private async Task HandleEstateInstanceCreatedOrUpdated(CloudEvent daEvent)
