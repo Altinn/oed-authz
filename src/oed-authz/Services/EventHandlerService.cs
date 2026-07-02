@@ -24,7 +24,7 @@ public class AltinnEventHandlerService(
         {
             EventType.CaseStatusUpdateValidated or EventType.CaseStatusManuallySynced =>
                 HandleEstateInstanceCreatedOrUpdated(cloudEvent),
-            EventType.FregProtectedAddressUpdate => 
+            EventType.FregProtectedAddressUpdate =>
                 HandleProtectedAddressUpdate(cloudEvent),
             Events.Platform.ValidateSubscription => Task.CompletedTask,
             _ => throw new ArgumentException("Unknown event type")
@@ -39,20 +39,50 @@ public class AltinnEventHandlerService(
 
         var eventData = JsonSerializer.Deserialize<FregProtectedAddressUpdateEvent>(fregEvent.Data.ToString()!);
 
+        if (eventData is null)
+        {
+            return;
+        }
+
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-        var roleAssignmentsForPerson = await oedRoleRepositoryService.GetAllRoleAssignmentsForPerson(eventData!.Nin);
-     
-        var estatesPersonIsPartOf = roleAssignmentsForPerson
-            .Select(x => x.EstateSsn)
-            .Distinct();
-        
-        foreach (var estateSsn in estatesPersonIsPartOf)
-        {
-            logger.LogInformation("Removing all role assignments for estate {EstateSsn} due to protected address update for person with Nin {Nin}",
-                estateSsn, SsnUtils.TruncateSsn(eventData.Nin));
+        var roleAssignmentsForPerson = await oedRoleRepositoryService.GetAllRoleAssignmentsForPerson(eventData.Nin);
 
-            await RemoveAllRoleAssignmentsForEstate(estateSsn, fregEvent.Id);
+        foreach (RoleAssignment ra in roleAssignmentsForPerson)
+        {
+            // Affected nin is the recipient of an individual proxy: revoke only that delegation.
+            // Removing it cascades any collective proxy the person held because of it.
+            if (ra.RecipientSsn == eventData.Nin && ra.HeirSsn is not null)
+            {
+                logger.LogInformation("Removing individual proxy role for {Nin} in {EstateSsn}",
+                    SsnUtils.TruncateSsn(eventData.Nin), ra.EstateSsn);
+
+                await proxyManagementService.Remove(new()
+                {
+                    EstateSsn = ra.EstateSsn,
+                    ProxyRoleAssignment = new()
+                    {
+                        Created = ra.Created,
+                        HeirSsn = ra.HeirSsn,
+                        RecipientSsn = ra.RecipientSsn,
+                        RoleCode = ra.RoleCode
+                    }
+                });
+                continue;
+            }
+
+            // Affected nin is the recipient of the auto-managed collective proxy. A collective
+            // proxy always derives from one or more individual proxies, which are handled above -
+            // their removal cascades (via UpdateProxyRoleAssigments) into revoking this collective
+            // proxy. We only skip here so the stale snapshot row does not fall through to the
+            // estate wipe below; the person is a proxy holder, not an heir.
+            if (ra.RecipientSsn == eventData.Nin && ra.RoleCode == Constants.CollectiveProxyRoleCode)
+            {
+                continue;
+            }
+
+            logger.LogInformation("Removing all role assignments for estate {EstateSsn}", ra.EstateSsn);
+            await RemoveAllRoleAssignmentsForEstate(ra.EstateSsn, fregEvent.Id);
         }
 
         await transaction.CommitAsync();
@@ -63,13 +93,13 @@ public class AltinnEventHandlerService(
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
         var eventCursor = await GetOrCreateEventCursorForUpdate(daEvent);
-        
+
         // Discard event if out of order
         if (EventIsOutOfOrder(eventCursor, daEvent))
         {
             logger.LogInformation(
                 "Discarding event {Id} of type {EventType} for estate {Estate} - event is out of order",
-                daEvent.Id, 
+                daEvent.Id,
                 daEvent.Type,
                 daEvent.Subject);
 
@@ -83,7 +113,7 @@ public class AltinnEventHandlerService(
 
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);
 
-        if (eventData.IsFeilfort() || 
+        if (eventData.IsFeilfort() ||
             eventData.HasIncompleteRoleInformation())
         {
             await RemoveAllRoleAssignmentsForEstate(estateSsn, daEvent.Id);
@@ -102,7 +132,7 @@ public class AltinnEventHandlerService(
 
     private async Task UpdateCourtAssignedRoleAssignments(
         string estateSsn,
-        EstateCaseUpdatedEvent eventData, 
+        EstateCaseUpdatedEvent eventData,
         string eventId,
         DateTimeOffset eventTime)
     {
@@ -113,7 +143,7 @@ public class AltinnEventHandlerService(
 
         // Find assignments in updated list but not in current list to add
         var assignmentsToAdd = new List<RoleAssignment>();
-        
+
         // Only persons with Nin and a valid role code can be given access
         var eventRoleAssignments =
             eventData.HeirRolesV2
@@ -131,8 +161,8 @@ public class AltinnEventHandlerService(
             }
 
             if (!currentCourtAssignedRoleAssignments
-                .Exists(x => 
-                    x.RecipientSsn == updatedRoleAssignment.Nin && 
+                .Exists(x =>
+                    x.RecipientSsn == updatedRoleAssignment.Nin &&
                     x.RoleCode == updatedRoleAssignment.Role))
             {
                 assignmentsToAdd.Add(new RoleAssignment
@@ -150,7 +180,7 @@ public class AltinnEventHandlerService(
         foreach (var currentRoleAssignment in currentCourtAssignedRoleAssignments)
         {
             if (!eventRoleAssignments.Any(x =>
-                    x.Nin == currentRoleAssignment.RecipientSsn && 
+                    x.Nin == currentRoleAssignment.RecipientSsn &&
                     x.Role == currentRoleAssignment.RoleCode))
             {
                 assignmentsToRemove.Add(new RoleAssignment

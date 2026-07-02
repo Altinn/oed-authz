@@ -1,4 +1,4 @@
-﻿using Altinn.Dd.InternalEvents;
+using Altinn.Dd.InternalEvents;
 using Altinn.Dd.InternalEvents.Estate;
 using FakeItEasy;
 using FluentAssertions;
@@ -1180,6 +1180,493 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             .ToList()
             .Should().ContainSingle(ra =>
                 ra.RecipientSsn == heirSsn && ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenProtectedPersonIsOnlyAProxyRecipient_ShouldRemoveOnlyThatProxy_AndLeaveEstateIntact()
+    {
+        // Arrange - the protected person is NOT an heir in this estate. Two heirs hold the
+        // probate role, and the protected person has merely received an individual proxy from
+        // one of them. Per the rule in HandleProtectedAddressUpdate ("Affected nin is a proxy
+        // recipient, only remove the proxy role"), only that single delegation is revoked - the
+        // estate belongs to the heirs and must remain intact.
+        var protectedProxyRecipientSsn = _databaseFixture.NextSsn;
+        var heirWhoDelegated = _databaseFixture.NextSsn;
+        var otherHeir = _databaseFixture.NextSsn;
+        var estateSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = heirWhoDelegated,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = otherHeir,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            // The protected person received an individual proxy from one of the two heirs.
+            // Receiving a proxy from only one of two probate heirs means no collective proxy exists.
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = protectedProxyRecipientSsn,
+                HeirSsn = heirWhoDelegated,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedProxyRecipientSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedProxyRecipientSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - only the proxy pointing at the protected person is gone. Both heirs keep
+        // their probate roles, and no collective proxy is incorrectly added or removed.
+        var remaining = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        remaining.Should().HaveCount(2);
+        remaining.Should().ContainSingle(ra =>
+            ra.RecipientSsn == heirWhoDelegated && ra.RoleCode == Constants.ProbateRoleCode);
+        remaining.Should().ContainSingle(ra =>
+            ra.RecipientSsn == otherHeir && ra.RoleCode == Constants.ProbateRoleCode);
+        remaining.Should().NotContain(ra => ra.RecipientSsn == protectedProxyRecipientSsn);
+        remaining.Should().NotContain(ra => ra.RoleCode == Constants.IndividualProxyRoleCode);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenProtectedPersonIsAnHeirWithCourtRole_ShouldWipeEntireEstate()
+    {
+        // Arrange - the protected person is an heir (holds a court-assigned role). Protecting
+        // them requires wiping the whole estate, including other heirs and any proxy assignments.
+        var protectedHeirSsn = _databaseFixture.NextSsn;
+        var otherHeirSsn = _databaseFixture.NextSsn;
+        var proxyRecipientSsn = _databaseFixture.NextSsn;
+        var estateSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = protectedHeirSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = otherHeirSsn,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            // A proxy that does not involve the protected person - it must still be wiped
+            // because the whole estate goes when a heir is protected.
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = proxyRecipientSsn,
+                HeirSsn = otherHeirSsn,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedHeirSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedHeirSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - the entire estate is gone, not just the protected person's own role.
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_ShouldWipeEstatesWhereHeir_RemoveOnlyProxyWhereDelegate_AndLeaveUnrelatedEstatesUntouched()
+    {
+        // A single protected person appears in three estates in three different capacities.
+        // This locks down that the two rules are applied per role assignment, independently,
+        // and that unrelated estates are never touched.
+        var protectedPersonSsn = _databaseFixture.NextSsn;
+
+        // Estate X: protected person is an heir -> the whole estate must be wiped.
+        var estateWhereHeir = _databaseFixture.NextSsn;
+        var coHeirInX = _databaseFixture.NextSsn;
+
+        // Estate Y: protected person is only a proxy recipient -> only that proxy is removed.
+        var estateWhereDelegate = _databaseFixture.NextSsn;
+        var heir1InY = _databaseFixture.NextSsn;
+        var heir2InY = _databaseFixture.NextSsn;
+
+        // Estate Z: protected person not involved -> must be left untouched.
+        var unrelatedEstate = _databaseFixture.NextSsn;
+        var heirInZ = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            // Estate X
+            new RoleAssignment
+            {
+                EstateSsn = estateWhereHeir,
+                RecipientSsn = protectedPersonSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateWhereHeir,
+                RecipientSsn = coHeirInX,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            },
+            // Estate Y
+            new RoleAssignment
+            {
+                EstateSsn = estateWhereDelegate,
+                RecipientSsn = heir1InY,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateWhereDelegate,
+                RecipientSsn = heir2InY,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateWhereDelegate,
+                RecipientSsn = protectedPersonSsn,
+                HeirSsn = heir1InY,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            },
+            // Estate Z
+            new RoleAssignment
+            {
+                EstateSsn = unrelatedEstate,
+                RecipientSsn = heirInZ,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = protectedPersonSsn,
+            Data = JsonSerializer.Serialize(new { nin = protectedPersonSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - Estate X wiped entirely
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateWhereHeir)
+            .ToList()
+            .Should().BeEmpty();
+
+        // Estate Y: only the proxy to the protected person removed; both heirs' roles intact
+        var estateY = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateWhereDelegate)
+            .ToList();
+
+        estateY.Should().HaveCount(2);
+        estateY.Should().ContainSingle(ra =>
+            ra.RecipientSsn == heir1InY && ra.RoleCode == Constants.ProbateRoleCode);
+        estateY.Should().ContainSingle(ra =>
+            ra.RecipientSsn == heir2InY && ra.RoleCode == Constants.ProbateRoleCode);
+        estateY.Should().NotContain(ra => ra.RecipientSsn == protectedPersonSsn);
+
+        // Estate Z: completely untouched
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == unrelatedEstate)
+            .ToList()
+            .Should().ContainSingle(ra =>
+                ra.RecipientSsn == heirInZ && ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenPersonHasNoRoleAssignments_ShouldDoNothing()
+    {
+        // Arrange - a protected-address event for someone with no role assignments at all
+        // must be a safe no-op and must not affect any other estate.
+        var personWithNoRolesSsn = _databaseFixture.NextSsn;
+        var unrelatedEstate = _databaseFixture.NextSsn;
+        var heirSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.Add(
+            new RoleAssignment
+            {
+                EstateSsn = unrelatedEstate,
+                RecipientSsn = heirSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = personWithNoRolesSsn,
+            Data = JsonSerializer.Serialize(new { nin = personWithNoRolesSsn })
+        };
+
+        // Act
+        var act = async () => await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == unrelatedEstate)
+            .ToList()
+            .Should().ContainSingle(ra => ra.RecipientSsn == heirSsn);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WithNullData_ShouldThrowArgumentNullException()
+    {
+        // Arrange - a freg event with no data payload should be rejected before any DB work.
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = _databaseFixture.NextSsn,
+            Data = null!
+        };
+
+        // Act
+        var act = async () => await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WithJsonNullData_ShouldReturnWithoutRemovingAnything()
+    {
+        // Arrange - a payload that deserializes to null (JSON literal null) must be treated as
+        // a safe no-op: the handler returns early and touches no role assignments.
+        var estateSsn = _databaseFixture.NextSsn;
+        var heirSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.Add(
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = heirSsn,
+                RoleCode = Constants.FormuesfullmaktRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = heirSsn,
+            Data = "null" // deserializes to null -> handler returns early
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().ContainSingle(ra => ra.RecipientSsn == heirSsn);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenProtectedPersonIsANonHeirHoldingCollectiveProxy_ShouldRemoveOnlyTheirProxies_AndLeaveEstateIntact()
+    {
+        // Arrange - the protected person is NOT an heir. They received an individual proxy from
+        // BOTH probate heirs and therefore also hold the auto-managed collective proxy. Only that
+        // person's proxy access (individual + collective) should be revoked - the heirs keep their
+        // own court roles and the estate must stay intact.
+        var estateSsn = _databaseFixture.NextSsn;
+        var heir1 = _databaseFixture.NextSsn;
+        var heir2 = _databaseFixture.NextSsn;
+        var nonHeirDelegate = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = heir1,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = heir2,
+                RoleCode = Constants.ProbateRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = nonHeirDelegate,
+                HeirSsn = heir1,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            },
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = nonHeirDelegate,
+                HeirSsn = heir2,
+                RoleCode = Constants.IndividualProxyRoleCode,
+            },
+            // Auto-managed collective proxy the delegate holds because they received a proxy from
+            // every probate heir. Note it has no HeirSsn - the row that used to trigger a full wipe.
+            new RoleAssignment
+            {
+                EstateSsn = estateSsn,
+                RecipientSsn = nonHeirDelegate,
+                RoleCode = Constants.CollectiveProxyRoleCode,
+            });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = nonHeirDelegate,
+            Data = JsonSerializer.Serialize(new { nin = nonHeirDelegate })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - both heirs keep their probate roles; every trace of the delegate's proxy
+        // access (individual and collective) is gone. The estate is NOT wiped.
+        var remaining = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        remaining.Should().HaveCount(2);
+        remaining.Should().ContainSingle(ra =>
+            ra.RecipientSsn == heir1 && ra.RoleCode == Constants.ProbateRoleCode);
+        remaining.Should().ContainSingle(ra =>
+            ra.RecipientSsn == heir2 && ra.RoleCode == Constants.ProbateRoleCode);
+        remaining.Should().NotContain(ra => ra.RecipientSsn == nonHeirDelegate);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenPersonIsAProxyRecipientInMultipleEstates_ShouldRemoveOnlyTheirProxiesInEach_RegardlessOfHeirCount()
+    {
+        // The protected person is a NON-heir delegate in two different estates at once:
+        //  - Estate S has a single probate heir.
+        //  - Estate M has two probate heirs.
+        // In both, the delegate received a proxy from every heir and therefore also holds the
+        // auto-managed collective proxy. The freg event must revoke only the delegate's proxy
+        // access in each estate, leaving each estate's own heirs untouched.
+        var delegateSsn = _databaseFixture.NextSsn;
+
+        // Estate S - single heir
+        var estateS = _databaseFixture.NextSsn;
+        var soleHeir = _databaseFixture.NextSsn;
+
+        // Estate M - multiple heirs
+        var estateM = _databaseFixture.NextSsn;
+        var heirM1 = _databaseFixture.NextSsn;
+        var heirM2 = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            // Estate S: the sole probate heir (who, being the only heir, also holds a collective
+            // proxy), plus the delegate's individual + collective proxy.
+            new RoleAssignment { EstateSsn = estateS, RecipientSsn = soleHeir, RoleCode = Constants.ProbateRoleCode },
+            new RoleAssignment { EstateSsn = estateS, RecipientSsn = soleHeir, RoleCode = Constants.CollectiveProxyRoleCode },
+            new RoleAssignment { EstateSsn = estateS, RecipientSsn = delegateSsn, HeirSsn = soleHeir, RoleCode = Constants.IndividualProxyRoleCode },
+            new RoleAssignment { EstateSsn = estateS, RecipientSsn = delegateSsn, RoleCode = Constants.CollectiveProxyRoleCode },
+            // Estate M: two probate heirs and the delegate's two individual proxies + collective proxy.
+            new RoleAssignment { EstateSsn = estateM, RecipientSsn = heirM1, RoleCode = Constants.ProbateRoleCode },
+            new RoleAssignment { EstateSsn = estateM, RecipientSsn = heirM2, RoleCode = Constants.ProbateRoleCode },
+            new RoleAssignment { EstateSsn = estateM, RecipientSsn = delegateSsn, HeirSsn = heirM1, RoleCode = Constants.IndividualProxyRoleCode },
+            new RoleAssignment { EstateSsn = estateM, RecipientSsn = delegateSsn, HeirSsn = heirM2, RoleCode = Constants.IndividualProxyRoleCode },
+            new RoleAssignment { EstateSsn = estateM, RecipientSsn = delegateSsn, RoleCode = Constants.CollectiveProxyRoleCode });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = delegateSsn,
+            Data = JsonSerializer.Serialize(new { nin = delegateSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert - Estate S (single heir): only the sole heir's rows remain, the delegate is gone.
+        var estateSRemaining = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateS)
+            .ToList();
+
+        estateSRemaining.Should().OnlyContain(ra => ra.RecipientSsn == soleHeir);
+        estateSRemaining.Should().Contain(ra => ra.RoleCode == Constants.ProbateRoleCode);
+        estateSRemaining.Should().NotContain(ra => ra.RecipientSsn == delegateSsn);
+
+        // Estate M (multiple heirs): both heirs keep their probate roles, the delegate is gone.
+        var estateMRemaining = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateM)
+            .ToList();
+
+        estateMRemaining.Should().HaveCount(2);
+        estateMRemaining.Should().ContainSingle(ra => ra.RecipientSsn == heirM1 && ra.RoleCode == Constants.ProbateRoleCode);
+        estateMRemaining.Should().ContainSingle(ra => ra.RecipientSsn == heirM2 && ra.RoleCode == Constants.ProbateRoleCode);
+        estateMRemaining.Should().NotContain(ra => ra.RecipientSsn == delegateSsn);
+    }
+
+    [Fact]
+    public async Task HandleEvent_FregProtectedAddressUpdate_WhenProtectedPersonIsTheSoleHeir_ShouldWipeEntireEstate()
+    {
+        // A single-heir estate where the protected person IS that heir. The whole estate must be
+        // wiped, including the collective proxy the sole heir automatically holds.
+        var soleHeirSsn = _databaseFixture.NextSsn;
+        var estateSsn = _databaseFixture.NextSsn;
+
+        _dbContext.RoleAssignments.AddRange(
+            new RoleAssignment { EstateSsn = estateSsn, RecipientSsn = soleHeirSsn, RoleCode = Constants.ProbateRoleCode },
+            new RoleAssignment { EstateSsn = estateSsn, RecipientSsn = soleHeirSsn, RoleCode = Constants.CollectiveProxyRoleCode });
+
+        await _dbContext.SaveChangesAsync();
+
+        var cloudEvent = new CloudEvent
+        {
+            Time = DateTimeOffset.UtcNow,
+            Type = EventType.FregProtectedAddressUpdate,
+            Subject = soleHeirSsn,
+            Data = JsonSerializer.Serialize(new { nin = soleHeirSsn })
+        };
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList()
+            .Should().BeEmpty();
     }
 
     public Task InitializeAsync() => Task.CompletedTask;
