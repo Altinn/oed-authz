@@ -74,7 +74,7 @@ public class AltinnEventHandlerService(
                     ProxyRoleAssignment = new()
                     {
                         Created = ra.Created,
-                        HeirSsn = ra.HeirSsn,
+                        HeirSsn = ra.HeirSsn!,
                         RecipientSsn = ra.RecipientSsn,
                         RoleCode = ra.RoleCode
                     }
