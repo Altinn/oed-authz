@@ -1,0 +1,16 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Commit packages.lock.json so the whole transitive graph is visible to
+         GitHub's dependency graph. Without a lockfile it only sees direct
+         PackageReference entries, which is why two critical (CVSS 9.8)
+         transitive advisories went unreported here. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+
+    <!-- Also surface transitive advisories at restore time. Warnings, not
+         errors: no project here sets TreatWarningsAsErrors globally. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+  </PropertyGroup>
+
+</Project>
