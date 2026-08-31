@@ -1,16 +1,25 @@
 <Project>
 
   <PropertyGroup>
-    <!-- Commit packages.lock.json so the whole transitive graph is visible to
-         GitHub's dependency graph. Without a lockfile it only sees direct
-         PackageReference entries, which is why two critical (CVSS 9.8)
-         transitive advisories went unreported here. -->
+    <!-- Commit packages.lock.json for reproducible restores, locked-mode
+         restores in CI, and a complete transitive graph for the audit below.
+
+         It does NOT reach GitHub's dependency graph, which does not parse this
+         format at all - that needs Automatic dependency submission, under
+         Settings > Advanced Security > Dependency graph. -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 
-    <!-- Also surface transitive advisories at restore time. Warnings, not
-         errors: no project here sets TreatWarningsAsErrors globally. -->
+    <!-- Surface transitive advisories at restore time. Every severity is
+         reported as a warning; high and critical also fail the restore.
+
+         NuGet encodes severity in the code - NU1901 low, NU1902 moderate,
+         NU1903 high, NU1904 critical - so promoting only the top two keeps a
+         newly published moderate visible without breaking the build. Do not
+         add NuGetAuditLevel: that filters findings out of the output instead
+         of changing whether they fail. -->
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
+    <WarningsAsErrors>NU1903;NU1904</WarningsAsErrors>
   </PropertyGroup>
 
 </Project>
