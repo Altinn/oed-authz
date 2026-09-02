@@ -6,7 +6,7 @@
         "type": "Direct",
         "requested": "[1.0.0, )",
         "resolved": "1.0.0",
-        "contentHash": "w53locoSaWJOhQCsd1nJMlyeqXgyzrnlFa6qsXinW7wXLVFN5dZRERoOSl7+7s37aygIaXd8d81d/bnADC/xzg==",
+        "contentHash": "q4ioSa4XeOeVI70zjO/+foxND2rhF4WoRn9kCVlsXsOLyDFzvx6jpU0QzcxeLrBI2gc0sReKEurhzWgPkKIr6g==",
         "dependencies": {
           "Xunit.SkippableFact": "1.4.13",
           "xunit.abstractions": "2.0.3"
@@ -16,7 +16,7 @@
         "type": "Direct",
         "requested": "[2.1.0, )",
         "resolved": "2.1.0",
-        "contentHash": "dWAENu/tIojWgtrv4yTmrIIvoIuwJXmXlPVvQ/BNEHjOMRCSCi2ife6qQl8OuFqP5SLFNEhuUEY0mC0IGX0mdg==",
+        "contentHash": "wyAmqAtxJrGZrX6ikhqWtuWSw6WbYeuDoO1UKi2RHMdqEpkCEGu2fWu+b5nrpaa1bU3E0jpWo2FwjaHYwdrLSA==",
         "dependencies": {
           "Azure.Identity": "1.13.0",
           "Azure.Storage.Blobs": "12.22.2",
