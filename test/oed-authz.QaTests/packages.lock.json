@@ -4,9 +4,9 @@
     "net10.0": {
       "Altinn.Dd.Tests.DependencyGate": {
         "type": "Direct",
-        "requested": "[1.0.0, )",
-        "resolved": "1.0.0",
-        "contentHash": "q4ioSa4XeOeVI70zjO/+foxND2rhF4WoRn9kCVlsXsOLyDFzvx6jpU0QzcxeLrBI2gc0sReKEurhzWgPkKIr6g==",
+        "requested": "[1.0.2, )",
+        "resolved": "1.0.2",
+        "contentHash": "b+ceoRzd2d1iFQp4DUIOtu6Wp8BKTBtXU22HMskKI/gBD2Q4U2lRO2j4R5PPgxlmi0w+OEdRabIu6UARIW8ODQ==",
         "dependencies": {
           "Xunit.SkippableFact": "1.4.13",
           "xunit.abstractions": "2.0.3"
