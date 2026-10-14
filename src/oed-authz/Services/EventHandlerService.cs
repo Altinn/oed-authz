@@ -18,6 +18,13 @@ public class AltinnEventHandlerService(
     ILogger<AltinnEventHandlerService> logger)
     : IAltinnEventHandlerService
 {
+    // Event data can arrive with its keys re-sorted (TT02 has delivered it in Postgres jsonb key order),
+    // so a polymorphic type's "type" discriminator (e.g. HeirRoleV2) is not guaranteed to come first.
+    private static readonly JsonSerializerOptions EventDataSerializerOptions = new()
+    {
+        AllowOutOfOrderMetadataProperties = true
+    };
+
     public Task HandleEvent(CloudEvent cloudEvent)
     {
         return cloudEvent.Type switch
@@ -112,7 +119,7 @@ public class AltinnEventHandlerService(
 
         ThrowIfEmptyData(daEvent);
 
-        var eventData = JsonSerializer.Deserialize<EstateCaseUpdatedEvent>(daEvent.Data.ToString()!)!;
+        var eventData = JsonSerializer.Deserialize<EstateCaseUpdatedEvent>(daEvent.Data.ToString()!, EventDataSerializerOptions)!;
         logger.LogInformation("Handling event {Id} for DA caseId: {DaCaseId}", daEvent.Id, eventData.CaseId);
 
         var estateSsn = SsnUtils.GetEstateSsnFromCloudEvent(daEvent);

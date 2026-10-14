@@ -1725,6 +1725,108 @@ public class EventHandlerServiceTests : IClassFixture<DatabaseFixture>, IAsyncLi
             .Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task HandleEvent_DataInJsonbKeyOrder_ShouldReadTypeDiscriminatorThatIsNotFirst()
+    {
+        // Arrange
+        var estateSsn = _databaseFixture.NextSsn;
+        var formuesfullmaktHeirSsn = _databaseFixture.NextSsn;
+        var probateHeirSsn = _databaseFixture.NextSsn;
+
+        // Shape of a case-status-update-validated event delivered by Altinn Events in TT02. Its data is in
+        // Postgres jsonb key order (by length, then bytewise), not in the order oed-events serialized it, so
+        // the "type" discriminator of each heir is no longer its first property.
+        var json = $$"""
+            {
+              "specversion": "1.0",
+              "id": "86e31fb8-ddb1-4bee-a7e7-02aeda347ab7",
+              "time": "2026-10-14T13:22:04.2556184Z",
+              "type": "{{EventType.CaseStatusUpdateValidated}}",
+              "source": "https://hendelsesliste.test.domstol.no/api/objects/5ee69915-f3c9-465e-b346-70f7d56f8ab9",
+              "subject": "{{estateSsn}}",
+              "resource": "urn:altinn:resource:dodsbo-domstoladmin-api",
+              "datacontenttype": "application/json",
+              "data": {
+                "time": "2026-10-14T13:22:04.2556184+00:00",
+                "caseId": "5ee69915-f3c9-465e-b346-70f7d56f8ab9",
+                "accessDate": null,
+                "caseNumber": "25-000009DFA-TOSL/07",
+                "caseStatus": "FERDIGBEHANDLET",
+                "resultType": "PRIVAT_SKIFTE_IHT_ARVELOVEN_PARAGRAF_99",
+                "heirRolesV2": [
+                  {
+                    "nin": "{{formuesfullmaktHeirSsn}}",
+                    "role": "{{Constants.FormuesfullmaktRoleCode}}",
+                    "type": "Person",
+                    "relation": "urn:digitaltdodsbo:arving:barn",
+                    "signedDate": null,
+                    "probateCertificateRecipient": false
+                  },
+                  {
+                    "nin": "{{probateHeirSsn}}",
+                    "role": "{{Constants.ProbateRoleCode}}",
+                    "type": "Person",
+                    "relation": "urn:digitaltdodsbo:arving:gjenlevEktefelle",
+                    "signedDate": null,
+                    "probateCertificateRecipient": true
+                  },
+                  {
+                    "type": "Organization",
+                    "orgNo": "314286979",
+                    "relation": "urn:digitaltdodsbo:arving:testArvingFull",
+                    "probateCertificateRecipient": false
+                  },
+                  {
+                    "name": "Firma Papp AB",
+                    "type": "PappOrganization",
+                    "orgNo": "123-123-123-123",
+                    "relation": "urn:digitaltdodsbo:arving:testArvingFull",
+                    "countryCode": "SWE",
+                    "probateCertificateRecipient": false
+                  },
+                  {
+                    "name": { "lastName": "Person", "firstName": "Papp", "middleName": [] },
+                    "type": "PappPerson",
+                    "relation": "urn:digitaltdodsbo:arving:barn",
+                    "dateOfBirth": "1979-06-16T00:00:00+00:00",
+                    "probateCertificateRecipient": false
+                  }
+                ],
+                "isCancelled": null,
+                "probateDeadline": "2026-12-13T13:22:04.2556184+00:00",
+                "probateResultV2": {
+                  "heirs": [
+                    { "nin": "{{formuesfullmaktHeirSsn}}", "type": "Person", "willingToAssumeDebt": false },
+                    { "nin": "{{probateHeirSsn}}", "type": "Person", "willingToAssumeDebt": true },
+                    { "type": "Organization", "orgNo": "314286979", "willingToAssumeDebt": false },
+                    { "name": "Firma Papp AB", "type": "PappOrganization", "willingToAssumeDebt": false }
+                  ],
+                  "result": "PRIVAT_SKIFTE_IHT_ARVELOVEN_PARAGRAF_99"
+                },
+                "districtCourtName": "Oslo Tingrett"
+              }
+            }
+            """;
+
+        // Bind the way EventController's [FromBody] does, so Data is a JsonElement as in production.
+        var cloudEvent = JsonSerializer.Deserialize<CloudEvent>(json, JsonSerializerOptions.Web)!;
+
+        // Act
+        await _sut.HandleEvent(cloudEvent);
+
+        // Assert
+        var roleAssignments = _dbContext.RoleAssignments
+            .Where(ra => ra.EstateSsn == estateSsn)
+            .ToList();
+
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == formuesfullmaktHeirSsn &&
+            ra.RoleCode == Constants.FormuesfullmaktRoleCode);
+        roleAssignments.Should().ContainSingle(ra =>
+            ra.RecipientSsn == probateHeirSsn &&
+            ra.RoleCode == Constants.ProbateRoleCode);
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
     public Task DisposeAsync() => Task.CompletedTask;
 }
