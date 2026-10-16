@@ -131,3 +131,7 @@ Project-level `.claude/` directory configures automated behaviors:
 - Roles must not be cached by external consumers — they can change at any time.
 - Only Norwegian 11-digit SSNs are supported as identifiers.
 - Out-of-order CloudEvents are silently discarded based on the `EventCursor` timestamp tracking.
+
+## Azure Key Vault
+
+Never read, list or enumerate Azure Key Vault secrets — no `az keyvault secret show`/`list`, no `SecretClient`, no portal scraping, and not even secret names or value lengths. If a task needs a secret value, ask the user to supply it or to run the command themselves.
