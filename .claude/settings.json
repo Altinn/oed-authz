@@ -13,6 +13,21 @@
             "command": "python3 -c \"import json,sys; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); print(json.dumps({'decision':'block','reason':'Editing dev secrets/config requires a manual edit'}) if 'appsettings.Development.json' in f or f.endswith('.env') else json.dumps({'decision':'allow'}))\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-keyvault-secrets.js"
+            ],
+            "statusMessage": "Checking for Key Vault secret access",
+            "timeout": 15,
+            "onFailure": "block"
+          }
+        ]
       }
     ],
     "PostToolUse": [
