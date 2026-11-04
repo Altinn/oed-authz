@@ -1,7 +1,10 @@
 ﻿using oed_authz.Controllers;
 using FakeItEasy;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using oed_authz.Interfaces;
 using oed_authz.Models;
 using oed_authz.Models.Dto;
@@ -66,6 +69,34 @@ namespace oed_authz.UnitTests.Controllers
             response!.RoleAssignments.Should().HaveCount(2);
             response.RoleAssignments.Should().ContainSingle(ra => ra.IsRestricted == false).Which.RecipientSsn.Should().Be("12345678901");
             response.RoleAssignments.Should().ContainSingle(ra => ra.IsRestricted == true).Which.RecipientSsn.Should().Be("12345678902");
+        }
+
+        [Fact]
+        public async Task AddProxy_ReturnsConflict_WhenTheProxyAlreadyExists()
+        {
+            // Arrange
+            // This is the shape SaveChangesAsync throws on a unique violation, pinned by ProxyManagementServiceAddTests
+            A.CallTo(() => _fakeProxyManagementService.Add(A<ProxyManagementRequest>._))
+                .Throws(new DbUpdateException(
+                    "An error occurred while saving the entity changes.",
+                    new PostgresException("duplicate key value violates unique constraint", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation)));
+            var sut = new AuthorizationController(_fakePipService, _fakeProxyManagementService);
+
+            // Act
+            var result = await sut.AddProxy(new ProxyAddRequestDto
+            {
+                Add = new ProxyAssignmentDto
+                {
+                    EstateSsn = "11111111111",
+                    HeirSsn = "12345678901",
+                    RecipientSsn = "99999999999",
+                    Role = Constants.IndividualProxyRoleCode
+                }
+            });
+
+            // Assert
+            result.Should().BeOfType<ObjectResult>()
+                .Which.StatusCode.Should().Be(StatusCodes.Status409Conflict);
         }
     }
 }
