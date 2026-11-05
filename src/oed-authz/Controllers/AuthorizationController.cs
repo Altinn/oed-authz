@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using oed_authz.Interfaces;
 using oed_authz.Models;
@@ -78,7 +79,8 @@ public class AuthorizationController : Controller
                 statusCode: StatusCodes.Status400BadRequest
             );
         }
-        catch (PostgresException ex) when (ex.SqlState == "23505")
+        // EF Core wraps the PostgresException in a DbUpdateException, so catching PostgresException never matches
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             return Problem(
                 title: "Constraint Violation",
