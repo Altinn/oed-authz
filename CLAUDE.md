@@ -24,7 +24,8 @@ dotnet test --filter "FullyQualifiedName~ClassName.MethodName"
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Run application locally
+# Run application locally (https://localhost:7035, Swagger UI on /swagger).
+# Needs PostgreSQL on localhost:5432: `docker-compose up -d` in the oed repository.
 dotnet run --project src/oed-authz/oed-authz.csproj
 
 # Add EF Core migration
@@ -93,7 +94,7 @@ Local development connection strings (from `appsettings.Development.json`):
 
 ### Configuration
 
-`appsettings.json` holds non-secret settings (`GeneralSettings`). Secrets (connection strings, event auth key) are injected via Azure Key Vault in production and via `dotnet user-secrets` in development.
+`appsettings.json` holds non-secret settings (`GeneralSettings`). Secrets (connection strings, event auth key) are injected via Azure Key Vault in production. In development they come from `appsettings.Development.json`, so a local run needs no secrets and no Key Vault; `dotnet user-secrets` can override them.
 
 ```json
 {

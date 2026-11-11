@@ -349,11 +349,20 @@ Post the body below to the `remove` endpoint.
 
 ## Local development setup
 
-1. Install PostgreSQL 13 or later
-2. Install pgAdmin
-4. Create a database locally with name `oedauthz`
-3. Create the user `oedpgadmin` (only used for migrations), set password to `secret`. Give all privileges to `oedauthz`
-4. Create the user `oedpguser`, set password to `secret`. Give usage privileges to `oedauthz`.
-5. Run/debug the project
+1. Start PostgreSQL. The [oed](https://altinn.studio/repos/digdir/oed) repository's `docker-compose.yaml` starts a container on `localhost:5432` that already has the `oedauthz` database and the users `oedpgadmin` (only used for migrations) and `oedpguser`, both with password `secret`:
+   ```bash
+   # In the oed repository
+   docker-compose up -d
+   ```
+2. Run the project:
+   ```bash
+   dotnet run --project src/oed-authz/oed-authz.csproj --launch-profile oed_authz
+   ```
 
-This should build and migrate the database. Open https://localhost/swagger for Swagger UI.
+This builds the project and migrates the database. The API listens on `https://localhost:7035` and `http://localhost:5035`; open https://localhost:7035/swagger for Swagger UI.
+
+No secrets and no Azure Key Vault are needed locally. The connection strings and the event auth key (`secret`) are in `appsettings.Development.json`; override one with `dotnet user-secrets set "Secrets:<name>" "<value>"` if you need to.
+
+Requests are still authenticated against the real Maskinporten test environment and the TT02 Altinn platform, so a caller needs a real test token with the right scope, and the machine needs internet access. A locally running oed calls this API on `https://localhost:7035` (`OedConfig:ProbateProxy:BaseAddress`) with its own Maskinporten client.
+
+To use your own PostgreSQL instead, create the database `oedauthz` and the two users above, giving `oedpgadmin` all privileges and `oedpguser` usage privileges on it.
