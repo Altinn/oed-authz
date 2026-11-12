@@ -8,5 +8,6 @@ public interface IRoleAssignmentsRepository
     public Task<List<RoleAssignment>> GetRoleAssignmentsForPerson(string estateSsn, string recipientSsn);
     public Task<List<RoleAssignment>> GetAllRoleAssignmentsForPerson(string ssn);
     public Task AddRoleAssignment(RoleAssignment roleAssignment);
-    public Task RemoveRoleAssignment(RoleAssignment roleAssignment);
+    /// <returns>The number of role assignments removed, 0 when none matched.</returns>
+    public Task<int> RemoveRoleAssignment(RoleAssignment roleAssignment);
 }

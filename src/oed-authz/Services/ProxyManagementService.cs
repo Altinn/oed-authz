@@ -31,7 +31,7 @@ public class ProxyManagementService : IProxyManagementService
         await UpdateProxyRoleAssigments(proxyManagementRequest.EstateSsn);
     }
 
-    public async Task Remove(ProxyManagementRequest proxyManagementRequest)
+    public async Task<bool> Remove(ProxyManagementRequest proxyManagementRequest)
     {
         await ValidateRequest(proxyManagementRequest);
 
@@ -43,8 +43,10 @@ public class ProxyManagementService : IProxyManagementService
             RoleCode = proxyManagementRequest.ProxyRoleAssignment.RoleCode
         };
 
-        await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
+        var removed = await _oedRoleRepositoryService.RemoveRoleAssignment(roleAssignment);
         await UpdateProxyRoleAssigments(proxyManagementRequest.EstateSsn);
+
+        return removed > 0;
     }
 
     public async Task UpdateProxyRoleAssigments(string estateSsn)

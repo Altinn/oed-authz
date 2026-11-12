@@ -97,7 +97,16 @@ public class AuthorizationController : Controller
     {
         try
         {
-            await HandleRequest(proxyRemoveRequestDto);
+            if (!await HandleRequest(proxyRemoveRequestDto))
+            {
+                // Lets the caller tell a repeated remove from a real one, and notify the recipient only once
+                return Problem(
+                    title: "Not Found",
+                    detail: "There is no such proxy assignment to remove.",
+                    statusCode: StatusCodes.Status404NotFound
+                );
+            }
+
             return NoContent();
         }
         catch (ArgumentException ex)
@@ -198,7 +207,7 @@ public class AuthorizationController : Controller
         });
     }
 
-    private async Task HandleRequest(ProxyRemoveRequestDto proxyRemoveRequestDto)
+    private async Task<bool> HandleRequest(ProxyRemoveRequestDto proxyRemoveRequestDto)
     {
         var papRequest = new ProxyManagementRequest
         {
@@ -211,7 +220,7 @@ public class AuthorizationController : Controller
             }
         };
 
-        await _papService.Remove(papRequest);
+        return await _papService.Remove(papRequest);
     }
 
     private void FilterProxyRoles(PipResponse pipResponse)
