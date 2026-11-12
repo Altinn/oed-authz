@@ -101,6 +101,7 @@ public class AuthorizationController : Controller
             {
                 // Lets the caller tell a repeated remove from a real one, and notify the recipient only once
                 return Problem(
+                    type: Constants.ProxyAssignmentNotFoundProblemType,
                     title: "Not Found",
                     detail: "There is no such proxy assignment to remove.",
                     statusCode: StatusCodes.Status404NotFound

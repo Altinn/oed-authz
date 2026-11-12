@@ -26,6 +26,12 @@ public static class Constants
     public const string SuperadminRoleCode = "urn:altinn:digitaltdodsbo:superadmin";
     public const string? NoRoleCode = null;
 
+    /// <summary>
+    /// The problem type of the 404 from proxies/remove when there is no such assignment. oed relies on it to
+    /// tell a repeated remove from any other 404, so it must not change.
+    /// </summary>
+    public const string ProxyAssignmentNotFoundProblemType = "urn:digitaltdodsbo:problem:proxy-assignment-not-found";
+
     public static IReadOnlyCollection<string> ProbateAndProxyRoles => [ProbateRoleCode, IndividualProxyRoleCode, CollectiveProxyRoleCode];
 }
 

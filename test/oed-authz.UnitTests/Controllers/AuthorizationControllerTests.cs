@@ -125,8 +125,11 @@ namespace oed_authz.UnitTests.Controllers
             var result = await sut.RemoveProxy(CreateRemoveRequest());
 
             // Assert
-            result.Should().BeOfType<ObjectResult>()
-                .Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+            objectResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            // oed tells this 404 from any other by its type, so the literal value is part of the contract
+            objectResult.Value.Should().BeOfType<ProblemDetails>()
+                .Which.Type.Should().Be("urn:digitaltdodsbo:problem:proxy-assignment-not-found");
         }
 
         private static ProxyRemoveRequestDto CreateRemoveRequest() => new()
