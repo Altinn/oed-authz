@@ -344,8 +344,14 @@ Post the body below to the `remove` endpoint.
         "urn:digitaltdodsbo:rolecode": "urn:altinn:digitaltdodsbo:skiftefullmakt:individuell"
     }
 }
- Response: 204 No Content 
+// Response: 204 No Content when the assignment was removed.
+// Response: 404 Not Found when there was no such assignment, for instance because an earlier request already
+// removed it. The body is a ProblemDetails with
+// "type": "urn:digitaltdodsbo:problem:proxy-assignment-not-found".
 ```
+
+oed answers a repeated remove with success, and does not notify the recipient again, only when it gets a 404 with
+that `type`. Any other 404 (a wrong route or address) is treated as an error, so don't change or drop the `type`.
 
 ## Local development setup
 

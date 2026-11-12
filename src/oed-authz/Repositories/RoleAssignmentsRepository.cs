@@ -52,7 +52,7 @@ public class RoleAssignmentsRepository : IRoleAssignmentsRepository
             .ToListAsync();
     }
 
-    public Task RemoveRoleAssignment(RoleAssignment roleAssignment)
+    public Task<int> RemoveRoleAssignment(RoleAssignment roleAssignment)
     {
         return _dbContext.RoleAssignments
             .Where(ra =>
