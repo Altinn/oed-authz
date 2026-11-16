@@ -345,13 +345,14 @@ Post the body below to the `remove` endpoint.
     }
 }
 // Response: 204 No Content when the assignment was removed.
-// Response: 404 Not Found when there was no such assignment, for instance because an earlier request already
-// removed it. The body is a ProblemDetails with
+// Response: 404 Not Found when there was no such assignment from this heir: an earlier request already removed it,
+// or the proxy was given by another heir (the delete matches on heirSsn), or it never existed. The body is a ProblemDetails with
 // "type": "urn:digitaltdodsbo:problem:proxy-assignment-not-found".
 ```
 
-oed answers a repeated remove with success, and does not notify the recipient again, only when it gets a 404 with
-that `type`. Any other 404 (a wrong route or address) is treated as an error, so don't change or drop the `type`.
+So a 404 means "this heir has no such proxy", not strictly "already removed". oed answers a repeated remove with
+success, and does not notify the recipient again, only when it gets a 404 with that `type`. (oed's frontend only lets
+an heir remove proxies they gave themselves, so only a direct API call reaches the other-heir case.) Any other 404 (a wrong route or address) is treated as an error, so don't change or drop the `type`.
 
 ## Local development setup
 

@@ -31,6 +31,10 @@ public class ProxyManagementServiceRemoveTests(DatabaseFixture databaseFixture)
         (await assertContext.RoleAssignments.AnyAsync(ra =>
                 ra.EstateSsn == estateSsn && ra.RoleCode == Constants.IndividualProxyRoleCode))
             .Should().BeFalse();
+        // Only the proxy goes: the heir keeps the probate role, so a widened delete filter shows here
+        (await assertContext.RoleAssignments.AnyAsync(ra =>
+                ra.EstateSsn == estateSsn && ra.RecipientSsn == HeirSsn && ra.RoleCode == Constants.ProbateRoleCode))
+            .Should().BeTrue();
     }
 
     // A double submit, or a retry after a lost response: only one of the requests removed the proxy, so only
