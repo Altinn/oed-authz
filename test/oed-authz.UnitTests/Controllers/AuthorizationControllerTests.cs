@@ -98,5 +98,49 @@ namespace oed_authz.UnitTests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(StatusCodes.Status409Conflict);
         }
+
+        [Fact]
+        public async Task RemoveProxy_ReturnsNoContent_WhenTheProxyWasRemoved()
+        {
+            // Arrange
+            A.CallTo(() => _fakeProxyManagementService.Remove(A<ProxyManagementRequest>._)).Returns(true);
+            var sut = new AuthorizationController(_fakePipService, _fakeProxyManagementService);
+
+            // Act
+            var result = await sut.RemoveProxy(CreateRemoveRequest());
+
+            // Assert
+            result.Should().BeOfType<NoContentResult>();
+        }
+
+        // oed notifies the recipient when a proxy is removed, so a repeated remove must not look like a new one
+        [Fact]
+        public async Task RemoveProxy_ReturnsNotFound_WhenThereWasNoProxyToRemove()
+        {
+            // Arrange
+            A.CallTo(() => _fakeProxyManagementService.Remove(A<ProxyManagementRequest>._)).Returns(false);
+            var sut = new AuthorizationController(_fakePipService, _fakeProxyManagementService);
+
+            // Act
+            var result = await sut.RemoveProxy(CreateRemoveRequest());
+
+            // Assert
+            var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+            objectResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            // oed tells this 404 from any other by its type, so the literal value is part of the contract
+            objectResult.Value.Should().BeOfType<ProblemDetails>()
+                .Which.Type.Should().Be("urn:digitaltdodsbo:problem:proxy-assignment-not-found");
+        }
+
+        private static ProxyRemoveRequestDto CreateRemoveRequest() => new()
+        {
+            Remove = new ProxyAssignmentDto
+            {
+                EstateSsn = "11111111111",
+                HeirSsn = "12345678901",
+                RecipientSsn = "99999999999",
+                Role = Constants.IndividualProxyRoleCode
+            }
+        };
     }
 }
