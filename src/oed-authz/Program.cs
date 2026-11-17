@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Logging;
@@ -68,6 +69,13 @@ builder.Services.AddLogging(logging =>
 });
 
 builder.Services.AddProblemDetails();
+
+var generalSettings = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings);
+var maskinportenIssuerHost =
+    new Uri(generalSettings[nameof(GeneralSettings.MaskinportenOauth2WellKnownEndpoint)]!).Host;
+var maskinportenAuxillaryIssuerHost =
+    new Uri(generalSettings[nameof(GeneralSettings.MaskinportenAuxillaryOauth2WellKnownEndpoint)]!).Host;
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = Constants.MaskinportenOrAltinnAuthentication;
@@ -82,7 +90,8 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            ValidateIssuer = false,
+            // No ValidIssuer: the handler validates against the issuer in the well-known metadata
+            ValidateIssuer = true,
             ValidateAudience = false,
             RequireExpirationTime = true,
             ValidateLifetime = true,
@@ -99,7 +108,8 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            ValidateIssuer = false,
+            // No ValidIssuer: the handler validates against the issuer in the well-known metadata
+            ValidateIssuer = true,
             ValidateAudience = false,
             RequireExpirationTime = true,
             ValidateLifetime = true,
@@ -110,34 +120,46 @@ builder.Services.AddAuthentication(options =>
     {
         options.ForwardDefaultSelector = context =>
         {
+            string? issuer = null;
+
+            // Tokens from unknown issuers are rejected instead of falling back to one of the JwtBearer schemes
+            var scheme = Constants.RejectedIssuerAuthentication;
+
             var authHeader = context.Request.Headers[HeaderNames.Authorization].ToString();
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
                 var token = authHeader["Bearer ".Length..].Trim();
-                var issuer = JwtReader.GetIssuerFromJwt(token);
+                issuer = JwtReader.GetIssuerFromJwt(token);
 
-                if (issuer is not null)
+                if (Uri.TryCreate(issuer, UriKind.Absolute, out var issuerUri))
                 {
-                    var mpIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
-                    nameof(GeneralSettings.MaskinportenOauth2WellKnownEndpoint)]!;
-                    var mpAuxillaryIssuerSetting = builder.Configuration.GetSection(Constants.ConfigurationSectionGeneralSettings)[
-                        nameof(GeneralSettings.MaskinportenAuxillaryOauth2WellKnownEndpoint)]!;
-
-                    var issuerUri = new Uri(issuer);
-                    if (mpAuxillaryIssuerSetting.Contains(issuerUri.Host))
+                    if (string.Equals(issuerUri.Host, maskinportenAuxillaryIssuerHost, StringComparison.OrdinalIgnoreCase))
                     {
-                        return Constants.MaskinportenAuxillaryAuthentication;
+                        scheme = Constants.MaskinportenAuxillaryAuthentication;
                     }
-                    else if (mpIssuerSetting.Contains(issuerUri.Host))
+                    else if (string.Equals(issuerUri.Host, maskinportenIssuerHost, StringComparison.OrdinalIgnoreCase))
                     {
-                        return Constants.MaskinportenAuthentication;
+                        scheme = Constants.MaskinportenAuthentication;
                     }
                 }
             }
 
-            return Constants.MaskinportenAuxillaryAuthentication;
+            // Records which issuers real callers use, so issuer enforcement can be verified per environment
+            if (!string.IsNullOrEmpty(authHeader))
+            {
+                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("oed_authz.Authentication.IssuerSelector");
+                logger.Log(
+                    scheme == Constants.RejectedIssuerAuthentication ? LogLevel.Warning : LogLevel.Information,
+                    "Bearer token with issuer {TokenIssuer} on {Path} forwarded to authentication scheme {AuthenticationScheme}",
+                    issuer ?? "(unreadable)", context.Request.Path.Value, scheme);
+            }
+
+            return scheme;
         };
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, RejectedIssuerAuthenticationHandler>(
+        Constants.RejectedIssuerAuthentication, _ => { });
 
 builder.Services.AddAuthorization(options =>
 {

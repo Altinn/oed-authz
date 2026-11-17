@@ -17,12 +17,22 @@ public static class JwtReader
 
         ReadOnlySpan<char> payload = jwt.AsSpan(firstDot + 1, secondDot - firstDot - 1);
 
-        byte[] jsonBytes = Base64UrlDecode(payload);
-
-        using var doc = JsonDocument.Parse(jsonBytes);
-        if (doc.RootElement.TryGetProperty("iss", out var issElement))
+        // A malformed token has no readable issuer. Return null so the caller rejects it instead of failing with 500.
+        try
         {
-            return issElement.GetString();
+            byte[] jsonBytes = Base64UrlDecode(payload);
+
+            using var doc = JsonDocument.Parse(jsonBytes);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("iss", out var issElement)
+                && issElement.ValueKind == JsonValueKind.String)
+            {
+                return issElement.GetString();
+            }
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException)
+        {
+            return null;
         }
 
         return null;
