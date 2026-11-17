@@ -71,6 +71,8 @@ jobs:
   deploy-to-prod:
     name: Deploy to Production Environment
     needs: deploy-to-test
+    # Only master goes to production. A manual run on any other branch deploys to test only.
+    if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     environment:
       name: production
