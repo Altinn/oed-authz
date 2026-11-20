@@ -4,9 +4,9 @@
     "net10.0": {
       "Altinn.Dd.Tests.DependencyGate": {
         "type": "Direct",
-        "requested": "[1.0.2, )",
-        "resolved": "1.0.2",
-        "contentHash": "b+ceoRzd2d1iFQp4DUIOtu6Wp8BKTBtXU22HMskKI/gBD2Q4U2lRO2j4R5PPgxlmi0w+OEdRabIu6UARIW8ODQ==",
+        "requested": "[1.0.4, )",
+        "resolved": "1.0.4",
+        "contentHash": "AOKTHlGZrxQ9TTv8rNIrBHwKmat0VVrQ6ufP4a6cfDziohe2Yf8CWGB6wCZ/hJiWhL4Qn0Pd2KZkuXgtAp1mcg==",
         "dependencies": {
           "Xunit.SkippableFact": "1.4.13",
           "xunit.abstractions": "2.0.3"
@@ -14,9 +14,9 @@
       },
       "Altinn.Dd.Tests.SonarGate": {
         "type": "Direct",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "wyAmqAtxJrGZrX6ikhqWtuWSw6WbYeuDoO1UKi2RHMdqEpkCEGu2fWu+b5nrpaa1bU3E0jpWo2FwjaHYwdrLSA==",
+        "requested": "[2.3.1, )",
+        "resolved": "2.3.1",
+        "contentHash": "zkjknSwet7nTB9rFjkprulZZBmwghJrjgJAvfa6/esmcZcTqm7ABq0R3/x4sefVDQRWiB8r0JEqCJthR0dejOQ==",
         "dependencies": {
           "Azure.Identity": "1.13.0",
           "Azure.Storage.Blobs": "12.22.2",
