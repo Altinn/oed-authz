@@ -6,7 +6,7 @@ on:
     - cron: '45 2 * * *' # Runs every day at 02:45 UTC (offset to avoid SWA concurrent-deploy race)
 
 env:
-  DOTNET_VERSION: "10.0.x"
+  DOTNET_VERSION: "11.0.x"
   QATESTS: "1"
 
 jobs:

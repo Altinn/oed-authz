@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net10.0": {
+    "net11.0": {
       "Altinn.Dd.Tests.DependencyGate": {
         "type": "Direct",
         "requested": "[1.0.4, )",
@@ -103,17 +103,13 @@
           "Docker.DotNet.Enhanced.LegacyHttp": "4.3.3",
           "Docker.DotNet.Enhanced.NPipe": "4.3.3",
           "Docker.DotNet.Enhanced.NativeHttp": "4.3.3",
-          "Docker.DotNet.Enhanced.Unix": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+          "Docker.DotNet.Enhanced.Unix": "4.3.3"
         }
       },
       "Docker.DotNet.Enhanced.Handler.Abstractions": {
         "type": "Transitive",
         "resolved": "4.3.3",
-        "contentHash": "9Cp8hOgtynixcDoAs9lnEaQosluojSYmiW3fsLsLIVfZjlq/fznSIZNUhnmyT4Xo1Iyuok/y49WL/25O47u0Pw==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
-        }
+        "contentHash": "9Cp8hOgtynixcDoAs9lnEaQosluojSYmiW3fsLsLIVfZjlq/fznSIZNUhnmyT4Xo1Iyuok/y49WL/25O47u0Pw=="
       },
       "Docker.DotNet.Enhanced.LegacyHttp": {
         "type": "Transitive",
@@ -164,19 +160,6 @@
         "type": "Transitive",
         "resolved": "18.0.1",
         "contentHash": "O+utSr97NAJowIQT/OVp3Lh9QgW/wALVTP4RG1m2AfFP4IyJmJz0ZBmFJUsRQiAPgq6IRC0t8AAzsiPIsaUDEA=="
-      },
-      "Microsoft.Extensions.DependencyInjection.Abstractions": {
-        "type": "Transitive",
-        "resolved": "8.0.2",
-        "contentHash": "3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg=="
-      },
-      "Microsoft.Extensions.Logging.Abstractions": {
-        "type": "Transitive",
-        "resolved": "8.0.3",
-        "contentHash": "dL0QGToTxggRLMYY4ZYX5AMwBb+byQBd/5dMiZE07Nv73o6I5Are3C7eQTh7K2+A4ct0PVISSr7TZANbiNb2yQ==",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
-        }
       },
       "Microsoft.Identity.Client": {
         "type": "Transitive",
@@ -229,8 +212,7 @@
         "resolved": "2026.0.0",
         "contentHash": "Yu9dirPq8l3oaat0+OQ7K0nUf5MmYltpia5UGqsApTG4zTPvBC1cxbNnC3NERij26dUST0A3Ef1QdHSn5ArbWQ==",
         "dependencies": {
-          "BouncyCastle.Cryptography": "2.7.0",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+          "BouncyCastle.Cryptography": "2.7.0"
         }
       },
       "System.ClientModel": {
@@ -263,7 +245,6 @@
         "dependencies": {
           "Docker.DotNet.Enhanced": "4.3.3",
           "Docker.DotNet.Enhanced.X509": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
           "SSH.NET": "2026.0.0",
           "SharpZipLib": "1.4.2"
         }

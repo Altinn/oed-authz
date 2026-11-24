@@ -35,7 +35,7 @@ dotnet ef migrations add MigrationName --project src/oed-authz
 dotnet ef database update --project src/oed-authz
 ```
 
-CI runs on ubuntu-latest with .NET 10.x. The CD pipeline deploys to Azure App Service on merge to master.
+CI runs on ubuntu-latest with .NET 11.x. The CD pipeline deploys to Azure App Service on merge to master.
 
 ## Architecture
 
